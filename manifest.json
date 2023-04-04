@@ -1,0 +1,25 @@
+{
+  "manifest_version": 2,
+  "name": "Better Amazon Experience",
+  "version": "1.0",
+  "description": "Filter Amazon products by negative words and price",
+  "permissions": ["activeTab", "https://www.amazon.com/*"],
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon.png"
+    }
+  },
+  "icons": {
+    "48": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.amazon.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
+
