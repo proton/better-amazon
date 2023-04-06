@@ -19,12 +19,12 @@ const elementToggle = (element, show) => {
   element.style.display = show ? 'block' : 'none'
 }
 
-const filterProducts = _ => {
+const filterProducts = tags => {
   const filters = {}
-  filters.minimumReviewsCount = +amazonFilterTags.minimumReviewsCount.value
-  filters.negativeWords       = amazonFilterTags.negativeWords.value.split(/,|\n/).map(word => word.trim())
-  filters.minPrice            = +amazonFilterTags.minPrice.value
-  filters.maxPrice            = +amazonFilterTags.maxPrice.value
+  filters.minimumReviewsCount = +tags.minimumReviewsCount.value
+  filters.negativeWords       = tags.negativeWords.value.split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
+  filters.minPrice            = +tags.minPrice.value
+  filters.maxPrice            = +tags.maxPrice.value
 
   saveFilters(filters)
 
@@ -34,7 +34,11 @@ const filterProducts = _ => {
     const title        = product.querySelector('h2').innerText
     const price        = +product.querySelector('.a-price .a-offscreen').innerText.match(/\d+\.\d+/)[0]
 
-    let show = (reviewsCount >= amazonFilters.minimumReviewsCount) && (filters.negativeWords.filter(word => title.includes(word)).length === 0) && (filters.minPrice == 0 || price >= filters.minPrice) && (filters.maxPrice == 0 || price <= filters.maxPrice)
+    let show =
+      (reviewsCount >= filters.minimumReviewsCount) &&
+      (filters.negativeWords.filter(word => title.includes(word)).length === 0) &&
+      (filters.minPrice == 0 || price >= filters.minPrice) &&
+      (filters.maxPrice == 0 || price <= filters.maxPrice)
     elementToggle(product, show)
   }
 }
@@ -48,7 +52,7 @@ const findPageId = _ => {
 const customAmazonFiltersKey = _ => CUSTOM_AMAZON_FILTERS_KEY + '-' + findPageId()
 
 const loadFilters = (tags) => {
-  const savedFilters = localStorage.getItem(customAmazonFiltersKey)
+  const savedFilters = localStorage.getItem(customAmazonFiltersKey())
   if (savedFilters) {
     const filters = JSON.parse(savedFilters)
     for (const key in tags) {
@@ -73,8 +77,8 @@ amazonFilterTags.minPrice            = document.getElementById('low-price')
 amazonFilterTags.maxPrice            = document.getElementById('high-price')
 
 loadFilters(amazonFilterTags)
-filterProducts()
+filterProducts(amazonFilterTags)
 
 for (const key in amazonFilterTags) {
-  amazonFilterTags[key].addEventListener('change', filterProducts)
+  amazonFilterTags[key].addEventListener('change', _ => filterProducts(amazonFilterTags))
 }
