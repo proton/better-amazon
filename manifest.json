@@ -7,17 +7,16 @@
   "browser_action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "48": "icon.png"
+      "48": "images/icon.png"
     }
   },
   "icons": {
-    "48": "icon.png"
+    "48": "images/icon.png"
   },
   "content_scripts": [
     {
       "matches": ["https://www.amazon.com/*"],
       "js": ["content.js"],
-      "css": ["styles.css"],
       "run_at": "document_idle"
     }
   ]
