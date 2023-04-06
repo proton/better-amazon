@@ -31,14 +31,15 @@ const filterProducts = _ => {
   const products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   for (const product of products) {
     const reviewsCount = +product.querySelector('.a-size-small a .a-size-base').innerText.match(/(\d+)/)[0]
-    // const reviewsCount = product.querySelector('.a-size-small .a-size-base').innerText
+    const title        = product.querySelector('h2').innerText
+
     // const negativeWords = amazonFilterTags.negativeWords.value.split(',')
     // const negativeWordsFound = negativeWords.filter(word => product.innerText.includes(word)).length > 0
     // const minPrice = amazonFilterTags.minPrice.value
     // const maxPrice = amazonFilterTags.maxPrice.value
     // const price = product.querySelector('.a-price-whole').innerText
     // const show = reviewsCount >= amazonFilterTags.minimumReviewsCount.value && !negativeWordsFound && price >= minPrice && price <= maxPrice
-    let show = (reviewsCount >= amazonFilters.minimumReviewsCount) && true
+    let show = (reviewsCount >= amazonFilters.minimumReviewsCount) && (filters.negativeWords.filter(word => title.includes(word)).length === 0)
     elementToggle(product, show)
   }
 }
