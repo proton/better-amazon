@@ -15,25 +15,18 @@ const mySection = `
 </div>
 `
 
-const amazonFiltersTag = document.querySelector('#s-refinements > .a-section')
-amazonFiltersTag.innerHTML = mySection + amazonFiltersTag.innerHTML
-
-const amazonFilterTags = {}
-amazonFilterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
-amazonFilterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
-amazonFilterTags.minPrice            = document.getElementById('low-price')
-amazonFilterTags.maxPrice            = document.getElementById('high-price')
-
 const elementToggle = (element, show) => {
   element.style.display = show ? 'block' : 'none'
 }
 
 const filterProducts = _ => {
-  const amazonFilters = {}
-  amazonFilters.minimumReviewsCount = +amazonFilterTags.minimumReviewsCount.value
-  amazonFilters.negativeWords       = amazonFilterTags.negativeWords.value.split(/,|\n/).map(word => word.trim())
-  amazonFilters.minPrice            = +amazonFilterTags.minPrice.value
-  amazonFilters.maxPrice            = +amazonFilterTags.maxPrice.value
+  const filters = {}
+  filters.minimumReviewsCount = +amazonFilterTags.minimumReviewsCount.value
+  filters.negativeWords       = amazonFilterTags.negativeWords.value.split(/,|\n/).map(word => word.trim())
+  filters.minPrice            = +amazonFilterTags.minPrice.value
+  filters.maxPrice            = +amazonFilterTags.maxPrice.value
+
+  saveFilters(filters)
 
   const products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   for (const product of products) {
@@ -50,6 +43,41 @@ const filterProducts = _ => {
   }
 }
 
+const findPageId = _ => {
+  const url = window.location.href
+  const m = url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/)
+  return m ? +m[1] : 0
+}
+
+const customAmazonFiltersKey = _ => CUSTOM_AMAZON_FILTERS_KEY + '-' + findPageId()
+
+const loadFilters = (tags) => {
+  const savedFilters = localStorage.getItem(customAmazonFiltersKey)
+  if (savedFilters) {
+    const filters = JSON.parse(savedFilters)
+    for (const key in tags) {
+      tags[key].value = filters[key]
+    }
+  }
+}
+
+const saveFilters = (filters) => {
+  localStorage.setItem(customAmazonFiltersKey(), JSON.stringify(filters))
+}
+
 for (const key in amazonFilterTags) {
   amazonFilterTags[key].addEventListener('change', filterProducts)
 }
+
+const CUSTOM_AMAZON_FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
+
+const amazonFiltersTag = document.querySelector('#s-refinements > .a-section')
+amazonFiltersTag.innerHTML = mySection + amazonFiltersTag.innerHTML
+
+const amazonFilterTags = {}
+amazonFilterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
+amazonFilterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
+amazonFilterTags.minPrice            = document.getElementById('low-price')
+amazonFilterTags.maxPrice            = document.getElementById('high-price')
+
+loadFilters(amazonFilterTags)
