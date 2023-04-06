@@ -22,7 +22,7 @@ const elementToggle = (element, show) => {
 const filterProducts = tags => {
   const filters = {}
   filters.minimumReviewsCount = +tags.minimumReviewsCount.value
-  filters.negativeWords       = tags.negativeWords.value.split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
+  filters.negativeWords       = tags.negativeWords.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
   filters.minPrice            = +tags.minPrice.value
   filters.maxPrice            = +tags.maxPrice.value
 
@@ -31,7 +31,7 @@ const filterProducts = tags => {
   const products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   for (const product of products) {
     const reviewsCount = +product.querySelector('.a-size-small a .a-size-base').innerText.match(/(\d+)/)[0]
-    const title        = product.querySelector('h2').innerText
+    const title        = product.querySelector('h2').innerText.toLowerCase()
     const price        = +product.querySelector('.a-price .a-offscreen').innerText.match(/\d+\.\d+/)[0]
 
     let show =
