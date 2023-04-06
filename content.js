@@ -32,14 +32,9 @@ const filterProducts = _ => {
   for (const product of products) {
     const reviewsCount = +product.querySelector('.a-size-small a .a-size-base').innerText.match(/(\d+)/)[0]
     const title        = product.querySelector('h2').innerText
+    const price        = +product.querySelector('.a-price .a-offscreen').innerText.match(/\d+\.\d+/)[0]
 
-    // const negativeWords = amazonFilterTags.negativeWords.value.split(',')
-    // const negativeWordsFound = negativeWords.filter(word => product.innerText.includes(word)).length > 0
-    // const minPrice = amazonFilterTags.minPrice.value
-    // const maxPrice = amazonFilterTags.maxPrice.value
-    // const price = product.querySelector('.a-price-whole').innerText
-    // const show = reviewsCount >= amazonFilterTags.minimumReviewsCount.value && !negativeWordsFound && price >= minPrice && price <= maxPrice
-    let show = (reviewsCount >= amazonFilters.minimumReviewsCount) && (filters.negativeWords.filter(word => title.includes(word)).length === 0)
+    let show = (reviewsCount >= amazonFilters.minimumReviewsCount) && (filters.negativeWords.filter(word => title.includes(word)).length === 0) && (filters.minPrice == 0 || price >= filters.minPrice) && (filters.maxPrice == 0 || price <= filters.maxPrice)
     elementToggle(product, show)
   }
 }
@@ -82,3 +77,4 @@ amazonFilterTags.minPrice            = document.getElementById('low-price')
 amazonFilterTags.maxPrice            = document.getElementById('high-price')
 
 loadFilters(amazonFilterTags)
+filterProducts()
