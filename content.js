@@ -61,10 +61,6 @@ const saveFilters = (filters) => {
   localStorage.setItem(customAmazonFiltersKey(), JSON.stringify(filters))
 }
 
-for (const key in amazonFilterTags) {
-  amazonFilterTags[key].addEventListener('change', filterProducts)
-}
-
 const CUSTOM_AMAZON_FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
 
 const amazonFiltersTag = document.querySelector('#s-refinements > .a-section')
@@ -78,3 +74,7 @@ amazonFilterTags.maxPrice            = document.getElementById('high-price')
 
 loadFilters(amazonFilterTags)
 filterProducts()
+
+for (const key in amazonFilterTags) {
+  amazonFilterTags[key].addEventListener('change', filterProducts)
+}
