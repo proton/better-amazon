@@ -68,6 +68,8 @@ const saveFilters = (filters) => {
 const CUSTOM_AMAZON_FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
 
 const amazonFiltersTag = document.querySelector('#s-refinements > .a-section')
+if (!amazonFiltersTag) return
+
 amazonFiltersTag.innerHTML = mySection + amazonFiltersTag.innerHTML
 
 const amazonFilterTags = {}
