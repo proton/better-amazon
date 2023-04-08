@@ -49,6 +49,7 @@ const findPageId = _ => {
   return m ? +m[1] : 0
 }
 
+const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
 const customFiltersKey = _ => FILTERS_KEY + '-' + findPageId()
 
 const loadFilters = (tags) => {
@@ -65,22 +66,24 @@ const saveFilters = (filters) => {
   localStorage.setItem(customFiltersKey(), JSON.stringify(filters))
 }
 
-const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
+const init = _ => {
+  const filtersTag = document.querySelector('#s-refinements > .a-section')
+  if (!filtersTag) return
 
-const filtersTag = document.querySelector('#s-refinements > .a-section')
-if (!filtersTag) return
+  filtersTag.innerHTML = mySection + filtersTag.innerHTML
 
-filtersTag.innerHTML = mySection + filtersTag.innerHTML
+  const filterTags = {}
+  filterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
+  filterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
+  filterTags.minPrice            = document.getElementById('low-price')
+  filterTags.maxPrice            = document.getElementById('high-price')
 
-const filterTags = {}
-filterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
-filterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
-filterTags.minPrice            = document.getElementById('low-price')
-filterTags.maxPrice            = document.getElementById('high-price')
+  loadFilters(filterTags)
+  filterProducts(filterTags)
 
-loadFilters(filterTags)
-filterProducts(filterTags)
-
-for (const key in filterTags) {
-  filterTags[key].addEventListener('change', _ => filterProducts(filterTags))
+  for (const key in filterTags) {
+    filterTags[key].addEventListener('change', _ => filterProducts(filterTags))
+  }
 }
+
+init()
