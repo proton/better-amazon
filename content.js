@@ -49,10 +49,10 @@ const findPageId = _ => {
   return m ? +m[1] : 0
 }
 
-const customAmazonFiltersKey = _ => CUSTOM_AMAZON_FILTERS_KEY + '-' + findPageId()
+const customFiltersKey = _ => FILTERS_KEY + '-' + findPageId()
 
 const loadFilters = (tags) => {
-  const savedFilters = localStorage.getItem(customAmazonFiltersKey())
+  const savedFilters = localStorage.getItem(customFiltersKey())
   if (savedFilters) {
     const filters = JSON.parse(savedFilters)
     for (const key in tags) {
@@ -62,25 +62,25 @@ const loadFilters = (tags) => {
 }
 
 const saveFilters = (filters) => {
-  localStorage.setItem(customAmazonFiltersKey(), JSON.stringify(filters))
+  localStorage.setItem(customFiltersKey(), JSON.stringify(filters))
 }
 
-const CUSTOM_AMAZON_FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
+const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
 
-const amazonFiltersTag = document.querySelector('#s-refinements > .a-section')
-if (!amazonFiltersTag) return
+const filtersTag = document.querySelector('#s-refinements > .a-section')
+if (!filtersTag) return
 
-amazonFiltersTag.innerHTML = mySection + amazonFiltersTag.innerHTML
+filtersTag.innerHTML = mySection + filtersTag.innerHTML
 
-const amazonFilterTags = {}
-amazonFilterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
-amazonFilterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
-amazonFilterTags.minPrice            = document.getElementById('low-price')
-amazonFilterTags.maxPrice            = document.getElementById('high-price')
+const filterTags = {}
+filterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
+filterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
+filterTags.minPrice            = document.getElementById('low-price')
+filterTags.maxPrice            = document.getElementById('high-price')
 
-loadFilters(amazonFilterTags)
-filterProducts(amazonFilterTags)
+loadFilters(filterTags)
+filterProducts(filterTags)
 
-for (const key in amazonFilterTags) {
-  amazonFilterTags[key].addEventListener('change', _ => filterProducts(amazonFilterTags))
+for (const key in filterTags) {
+  filterTags[key].addEventListener('change', _ => filterProducts(filterTags))
 }
