@@ -15,7 +15,27 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.amazon.com/*"],
+      "matches": [
+        "https://www.amazon.com/*",
+        "https://www.amazon.ca/*",
+        "https://www.amazon.cn/*",
+        "https://www.amazon.co.jp/*",
+        "https://www.amazon.co.uk/*",
+        "https://www.amazon.com.au/*",
+        "https://www.amazon.de/*",
+        "https://www.amazon.es/*",
+        "https://www.amazon.fr/*",
+        "https://www.amazon.in/*",
+        "https://www.amazon.it/*",
+        "https://www.amazon.nl/*",
+        "https://www.amazon.com.mx/*",
+        "https://www.amazon.sg/*",
+        "https://www.amazon.se/*",
+        "https://www.amazon.sa/*",
+        "https://www.amazon.ae/*",
+        "https://www.amazon.com.tr/*",
+        "https://www.amazon.com.br/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_end"
     }
