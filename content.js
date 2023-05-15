@@ -19,6 +19,21 @@ const elementToggle = (element, show) => {
   element.style.display = show ? 'block' : 'none'
 }
 
+const getReviewCount = product => {
+  window.product = product
+  return +product.querySelector('.a-size-small a .a-size-base').innerText.replaceAll(',', '').match(/(\d+)/)[0]
+}
+
+const getTitle = product => {
+  window.product = product
+  return product.querySelector('h2').innerText.toLowerCase()
+}
+
+const getPrice = product => {
+  window.product = product
+  return +product.querySelector('.a-price .a-offscreen').innerText.match(/\d+\.\d+/)[0]
+}
+
 const filterProducts = tags => {
   const filters = {}
   filters.minimumReviewsCount = +tags.minimumReviewsCount.value
@@ -30,9 +45,11 @@ const filterProducts = tags => {
 
   const products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   for (const product of products) {
-    const reviewsCount = +product.querySelector('.a-size-small a .a-size-base').innerText.match(/(\d+)/)[0]
-    const title        = product.querySelector('h2').innerText.toLowerCase()
-    const price        = +product.querySelector('.a-price .a-offscreen').innerText.match(/\d+\.\d+/)[0]
+    const reviewsCount = getReviewCount(product)
+    const title        = getTitle(product)
+    const price        = getPrice(product)
+
+    console.debug({reviewsCount, title, price})
 
     let show =
       (reviewsCount >= filters.minimumReviewsCount) &&
