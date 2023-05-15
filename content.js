@@ -49,18 +49,15 @@ const filterProducts = tags => {
   filters.negativeWords       = tags.negativeWords.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
   filters.minPrice            = +tags.minPrice.value
   filters.maxPrice            = +tags.maxPrice.value
+  filters.order               = document.getElementById('s-result-sort-select').value
 
   saveFilters(filters)
 
-  const products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
-  let i = -1
+  let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   for (const product of products) {
-    ++i
     const reviewsCount = getReviewCount(product)
     const title        = getTitle(product)
     const price        = getPrice(product)
-
-    console.debug({i, reviewsCount, title, price})
 
     let show =
       (reviewsCount >= filters.minimumReviewsCount) &&
@@ -68,6 +65,18 @@ const filterProducts = tags => {
       (filters.minPrice == 0 || price >= filters.minPrice) &&
       (filters.maxPrice == 0 || price <= filters.maxPrice)
     elementToggle(product, show)
+  }
+
+  if (filters.order === 'price-asc-rank' || filters.order === 'price-desc-rank') {
+    products = Array.from(products)
+    if (filters.order === 'price-asc-rank')  products = products.sort((a, b) => getPrice(a) - getPrice(b))
+    if (filters.order === 'price-desc-rank') products = products.sort((a, b) => getPrice(b) - getPrice(a))
+
+    const parent = products[0].parentElement
+    parent.innerHTML = ''
+    for (const product of products) {
+      parent.appendChild(product)
+    }
   }
 }
 
