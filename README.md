@@ -2,5 +2,5 @@
 
 - Allows to filter products by reviews count
 - Allows to filter products titles by negative words
-- Make price filter works
+- Makes price filter works
 - Makes sort by price work properly
