@@ -73,7 +73,7 @@ const filterProducts = tags => {
     if (filters.order === 'price-desc-rank') products = products.sort((a, b) => getPrice(b) - getPrice(a))
 
     const parent = products[0].parentElement
-    parent.innerHTML = ''
+    parent.textContent = ''
     for (const product of products) {
       parent.appendChild(product)
     }
