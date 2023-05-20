@@ -11,4 +11,4 @@ TODO:
 - better settings per page caching
 - filter by free delivery
 - infinite scroll
-- not all pages have a pricing filter
+- remove product duplicates

@@ -12,6 +12,12 @@ const mySection = `
   <span>
     <textarea id="custom-amazon-filter-negative-words" rows="4" cols="10"></textarea>
   </span>
+  <div id="custom-amazon-filter-by-price-block">
+    <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
+    <input type="text" maxlength="9" id="custom-amazon-filter-low-price" placeholder="Min" name="low-price" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding">
+    <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
+    <input type="text" maxlength="9" id="custom-amazon-filter-high-price" placeholder="Max" name="high-price" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding">
+  </div>
 </div>
 `
 
@@ -112,8 +118,18 @@ const init = _ => {
   const filterTags = {}
   filterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
   filterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
-  filterTags.minPrice            = document.getElementById('low-price')
-  filterTags.maxPrice            = document.getElementById('high-price')
+
+  const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
+  if (document.getElementById('low-price')) {
+    filterTags.minPrice = document.getElementById('low-price')
+    filterTags.maxPrice = document.getElementById('high-price')
+    elementToggle(customPriceBlock, false)
+  } else {
+    filterTags.minPrice = document.getElementById('custom-amazon-filter-low-price')
+    filterTags.maxPrice = document.getElementById('custom-amazon-filter-high-price')
+    elementToggle(customPriceBlock, true)
+  }
+
 
   loadFilters(filterTags)
   filterProducts(filterTags)
