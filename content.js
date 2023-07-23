@@ -88,15 +88,19 @@ const filterProducts = tags => {
 
 const findPageId = _ => {
   const url = window.location.href
-  const m = url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/)
-  return m ? +m[1] : 0
+  const m = url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/) || url.match(/ref=([a-zA-Z\-_\d]+)/)
+  if (m) return m[1]
 }
 
 const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
-const customFiltersKey = _ => FILTERS_KEY + '-' + findPageId()
+const customFiltersKey = _ => {
+  const id = findPageId()
+  if (id) return FILTERS_KEY + '-' + id
+}
 
 const loadFilters = (tags) => {
-  const savedFilters = localStorage.getItem(customFiltersKey())
+  const key = customFiltersKey()
+  const savedFilters = key ? localStorage.getItem(key) : null
   if (savedFilters) {
     const filters = JSON.parse(savedFilters)
     for (const key in tags) {
@@ -106,7 +110,9 @@ const loadFilters = (tags) => {
 }
 
 const saveFilters = (filters) => {
-  localStorage.setItem(customFiltersKey(), JSON.stringify(filters))
+  const key = customFiltersKey()
+  if (!key) return
+  localStorage.setItem(key, JSON.stringify(filters))
 }
 
 const init = _ => {
