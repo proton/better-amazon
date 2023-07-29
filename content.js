@@ -7,6 +7,10 @@ const mySection = `
     <input type="number" value="0" id="custom-amazon-filter-minimal-reviews-count">
   </span>
   <div id="p_85-title" class="a-section a-spacing-small">
+    <input type="checkbox" id="custom-amazon-filter-free-delivery">
+    <span class="a-size-base a-color-base puis-bold-weight-text">Free delivery</span>
+  </div>
+  <div id="p_85-title" class="a-section a-spacing-small">
     <span class="a-size-base a-color-base puis-bold-weight-text">Negative words</span>
   </div>
   <span>
@@ -53,6 +57,7 @@ const filterProducts = tags => {
   const filters = {}
   filters.minimumReviewsCount = +tags.minimumReviewsCount.value
   filters.negativeWords       = tags.negativeWords.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
+  filters.freeDelivery        = tags.freeDelivery.checked
   filters.minPrice            = +tags.minPrice.value
   filters.maxPrice            = +tags.maxPrice.value
   filters.order               = document.getElementById('s-result-sort-select').value
@@ -65,11 +70,14 @@ const filterProducts = tags => {
     const title        = getTitle(product)
     const price        = getPrice(product)
 
+    const allText = product.innerText.toLowerCase()
+
     let show =
       (reviewsCount >= filters.minimumReviewsCount) &&
       (filters.negativeWords.filter(word => title.includes(word)).length === 0) &&
       (filters.minPrice == 0 || price >= filters.minPrice) &&
-      (filters.maxPrice == 0 || price <= filters.maxPrice)
+      (filters.maxPrice == 0 || price <= filters.maxPrice) &&
+      (!filters.freeDelivery || allText.includes('free delivery'))
     elementToggle(product, show)
   }
 
@@ -124,6 +132,7 @@ const init = _ => {
   const filterTags = {}
   filterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
   filterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
+  filterTags.freeDelivery        = document.getElementById('custom-amazon-filter-free-delivery')
 
   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
   if (document.getElementById('low-price')) {

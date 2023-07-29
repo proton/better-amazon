@@ -10,7 +10,6 @@ Links: [Firefox](https://addons.mozilla.org/en-US/firefox/addon/better-amazon-ex
 TODO:
 - cache just for current search, not historically
 - better settings per page caching
-- filter by free delivery
 - infinite scroll
 - remove product duplicates
 - need to fix: it stops working on changing pages
