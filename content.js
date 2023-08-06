@@ -35,7 +35,9 @@ const elementToggle = (element, show) => {
 
 const getReviewCount = product => {
   try {
-    return +product.querySelector('.a-size-small a .a-size-base').innerText.replaceAll(',', '').match(/(\d+)/)[0]
+    const el = product.querySelector('.a-size-small a .a-size-base')
+    if (!el) return 0
+    return +el.innerText.replaceAll(',', '').match(/(\d+)/)[0]
   }
   catch(err) {
     console.debug([err, product])
@@ -159,6 +161,18 @@ const init = _ => {
   for (const key in filterTags) {
     filterTags[key].addEventListener('change', _ => filterProducts(filterTags))
   }
+
+  // TODO: ugly hack to detect page change
+  let currentUrl = window.location.href
+  setInterval(function() {
+    if (currentUrl != window.location.href) {
+      currentUrl = window.location.href
+      setTimeout(_ => { filterProducts(filterTags) }, 0)
+      setTimeout(_ => { filterProducts(filterTags) }, 500)
+      setTimeout(_ => { filterProducts(filterTags) }, 1000)
+
+    }
+  }, 500)
 }
 
 init()
