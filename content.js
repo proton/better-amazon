@@ -15,6 +15,10 @@ const mySection = `
     <span class="a-size-base a-color-base puis-bold-weight-text">Remove sponsored</span>
   </div>
   <div id="p_85-title" class="a-section a-spacing-small">
+    <input type="checkbox" id="custom-amazon-filter-sort-by-unit">
+    <span class="a-size-base a-color-base puis-bold-weight-text">Sort by unit price</span>
+  </div>
+  <div id="p_85-title" class="a-section a-spacing-small">
     <span class="a-size-base a-color-base puis-bold-weight-text">Negative words</span>
   </div>
   <span>
@@ -59,12 +63,34 @@ const getPrice = product => {
   }
 }
 
+const getUnitPrice = product => {
+  const priceEl = product.querySelector('.a-price .a-offscreen')
+  const unitPriceEl = priceEl && priceEl.parentElement.parentElement.querySelector('.a-size-base.a-color-secondary')
+  if (!unitPriceEl) return Infinity
+
+  try {
+    return +unitPriceEl.innerText.match(/\(.*?(\d+[\.,]+\d+)\//)[1]
+  }
+  catch(err) {
+    console.debug([err, product])
+    return Infinity
+  }
+}
+
+const sortBy = (products, method, desc) => {
+  return products.sort((a, b) => {
+    const diff = method(a) - method(b)
+    return desc ? -diff : diff
+  })
+}
+
 const filterProducts = tags => {
   const filters = {}
   filters.minimumReviewsCount = +tags.minimumReviewsCount.value
   filters.negativeWords       = tags.negativeWords.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
   filters.freeDelivery        = tags.freeDelivery.checked
   filters.removeSponsored     = tags.removeSponsored.checked
+  filters.sortByUnit          = tags.sortByUnit.checked
   filters.minPrice            = +tags.minPrice.value
   filters.maxPrice            = +tags.maxPrice.value
   filters.order               = document.getElementById('s-result-sort-select').value
@@ -89,10 +115,11 @@ const filterProducts = tags => {
     elementToggle(product, show)
   }
 
-  if (filters.order === 'price-asc-rank' || filters.order === 'price-desc-rank') {
+  if (filters.sortByUnit || filters.order === 'price-asc-rank' || filters.order === 'price-desc-rank') {
     products = Array.from(products)
-    if (filters.order === 'price-asc-rank')  products = products.sort((a, b) => getPrice(a) - getPrice(b))
-    if (filters.order === 'price-desc-rank') products = products.sort((a, b) => getPrice(b) - getPrice(a))
+    if (filters.sortByUnit)                       products = sortBy(products, getUnitPrice)
+    else if (filters.order === 'price-asc-rank')  products = sortBy(products, getPrice)
+    else if (filters.order === 'price-desc-rank') products = sortBy(products, getPrice, true)
 
     const parent = products[0].parentElement
     parent.textContent = ''
@@ -142,6 +169,7 @@ const init = _ => {
   filterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
   filterTags.freeDelivery        = document.getElementById('custom-amazon-filter-free-delivery')
   filterTags.removeSponsored     = document.getElementById('custom-amazon-filter-remove-sponsored')
+  filterTags.sortByUnit          = document.getElementById('custom-amazon-filter-sort-by-unit')
 
   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
   if (document.getElementById('low-price')) {
@@ -170,7 +198,6 @@ const init = _ => {
       setTimeout(_ => { filterProducts(filterTags) }, 0)
       setTimeout(_ => { filterProducts(filterTags) }, 500)
       setTimeout(_ => { filterProducts(filterTags) }, 1000)
-
     }
   }, 500)
 }
