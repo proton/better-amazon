@@ -39,8 +39,10 @@ const generateTextarea = (field) => {
 }
 
 const generateField = field => {
-  if (field.type === 'number')   return generateNumberInput(field.title, field.name)
-  if (field.type === 'checkbox') return generateCheckbox(field.title, field.name)
+  if (field.type === 'number')   return generateNumberInput(field)
+  if (field.type === 'checkbox') return generateCheckbox(field)
+  if (field.type === 'textarea') return generateTextarea(field)
+  console.error(`Unknown field type: ${field.type}`)
 }
 
 const mySection =
@@ -135,7 +137,7 @@ const filterProducts = tags => {
     let show =
       (reviewsCount >= filters.minimumReviewsCount) &&
       (filters.negativeWords.filter(word => title.includes(word)).length === 0) &&
-      (filters.positiveWords.filter(word => title.includes(word)).length !== 0) &&
+      filters.positiveWords.every(word => title.includes(word)) &&
       (filters.minPrice == 0 || price >= filters.minPrice) &&
       (filters.maxPrice == 0 || price <= filters.maxPrice) &&
       (!filters.freeDelivery || allText.includes('free delivery')) &&
@@ -194,7 +196,7 @@ const init = _ => {
 
   const filterTags = {}
   for (const field of filtersFields) {
-    filterTags[filterField.name] = document.getElementById(fieldId(field))
+    filterTags[field.name] = document.getElementById(fieldId(field))
   }
 
   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
