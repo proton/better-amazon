@@ -8,33 +8,45 @@ const filtersFields = [
   { title: 'Words shouldn be present in the title', name: 'positiveWords', type: 'textarea' },
 ]
 
-const mySection = `
-<div id="custom-amazon-filters" class="a-section a-spacing-none">
+const fieldId = field => `custom-amazon-filter-${field.name}`
+
+const generateNumberInput = (field) => {
+  return `
   <div id="p_85-title" class="a-section a-spacing-small">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Minimal reviews count</span>
+    <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
   </div>
   <span>
-    <input type="number" value="0" id="custom-amazon-filter-minimal-reviews-count">
-  </span>
+    <input type="number" value="0" id="${fieldId(field)}">
+  </span>`
+}
+
+const generateCheckbox = (field) => {
+  return `
   <div id="p_85-title" class="a-section a-spacing-small">
-    <input type="checkbox" id="custom-amazon-filter-free-delivery">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Free delivery</span>
-  </div>
+    <input type="checkbox" id="${fieldId(field)}">
+    <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
+  </div>`
+}
+
+const generateTextarea = (field) => {
+  return `
   <div id="p_85-title" class="a-section a-spacing-small">
-    <input type="checkbox" id="custom-amazon-filter-remove-sponsored">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Remove sponsored</span>
-  </div>
-  <div id="p_85-title" class="a-section a-spacing-small">
-    <input type="checkbox" id="custom-amazon-filter-sort-by-unit">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Sort by unit price</span>
-  </div>
-  <div id="p_85-title" class="a-section a-spacing-small">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Negative words</span>
+    <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
   </div>
   <span>
-    <textarea id="custom-amazon-filter-negative-words" rows="4" cols="10"></textarea>
-  </span>
-  <div id="custom-amazon-filter-by-price-block">
+    <textarea id="${fieldId(field)}" rows="4" cols="10"></textarea>
+  </span>`
+}
+
+const generateField = field => {
+  if (field.type === 'number')   return generateNumberInput(field.title, field.name)
+  if (field.type === 'checkbox') return generateCheckbox(field.title, field.name)
+}
+
+const mySection =
+  `<div id="custom-amazon-filters" class="a-section a-spacing-none">` +
+  filtersFields.map(field => generateField(field)).join('\n') +
+  `<div id="custom-amazon-filter-by-price-block">
     <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
     <input type="text" maxlength="9" id="custom-amazon-filter-low-price" placeholder="Min" name="low-price" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding">
     <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
@@ -175,8 +187,8 @@ const init = _ => {
   filtersTag.innerHTML = mySection + filtersTag.innerHTML
 
   const filterTags = {}
-  for (const filterField of filtersFields) {
-    filterTags[filterField.name] = document.getElementById('custom-amazon-filter-' + filterField.name)
+  for (const field of filtersFields) {
+    filterTags[filterField.name] = document.getElementById(fieldId(field))
   }
 
   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
