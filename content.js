@@ -1,30 +1,54 @@
-const mySection = `
-<div id="custom-amazon-filters" class="a-section a-spacing-none">
+
+const filtersFields = [
+  { title: 'Minimal reviews count', name: 'minimumReviewsCount', type: 'number' },
+  { title: 'Free delivery', name: 'freeDelivery', type: 'checkbox' },
+  { title: 'Remove sponsored', name: 'removeSponsored', type: 'checkbox' },
+  { title: 'Sort by unit price', name: 'sortByUnit', type: 'checkbox' },
+  { title: 'Words should not be in the title', name: 'negativeWords', type: 'textarea' },
+  { title: 'Words should be present in the title', name: 'positiveWords', type: 'textarea' },
+]
+
+const fieldId = field => `custom-amazon-filter-${field.name}`
+
+const generateNumberInput = (field) => {
+  return `
   <div id="p_85-title" class="a-section a-spacing-small">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Minimal reviews count</span>
+    <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
   </div>
   <span>
-    <input type="number" value="0" id="custom-amazon-filter-minimal-reviews-count">
-  </span>
+    <input type="number" value="0" id="${fieldId(field)}">
+  </span>`
+}
+
+const generateCheckbox = (field) => {
+  return `
   <div id="p_85-title" class="a-section a-spacing-small">
-    <input type="checkbox" id="custom-amazon-filter-free-delivery">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Free delivery</span>
-  </div>
+    <input type="checkbox" id="${fieldId(field)}">
+    <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
+  </div>`
+}
+
+const generateTextarea = (field) => {
+  return `
   <div id="p_85-title" class="a-section a-spacing-small">
-    <input type="checkbox" id="custom-amazon-filter-remove-sponsored">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Remove sponsored</span>
-  </div>
-  <div id="p_85-title" class="a-section a-spacing-small">
-    <input type="checkbox" id="custom-amazon-filter-sort-by-unit">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Sort by unit price</span>
-  </div>
-  <div id="p_85-title" class="a-section a-spacing-small">
-    <span class="a-size-base a-color-base puis-bold-weight-text">Negative words</span>
+    <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
   </div>
   <span>
-    <textarea id="custom-amazon-filter-negative-words" rows="4" cols="10"></textarea>
-  </span>
-  <div id="custom-amazon-filter-by-price-block">
+    <textarea id="${fieldId(field)}" rows="4" cols="10"></textarea>
+  </span>`
+}
+
+const generateField = field => {
+  if (field.type === 'number')   return generateNumberInput(field)
+  if (field.type === 'checkbox') return generateCheckbox(field)
+  if (field.type === 'textarea') return generateTextarea(field)
+  console.error(`Unknown field type: ${field.type}`)
+}
+
+const mySection =
+  `<div id="custom-amazon-filters" class="a-section a-spacing-none">` +
+  filtersFields.map(field => generateField(field)).join('\n') +
+  `<div id="custom-amazon-filter-by-price-block">
     <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
     <input type="text" maxlength="9" id="custom-amazon-filter-low-price" placeholder="Min" name="low-price" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding">
     <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
@@ -84,13 +108,18 @@ const sortBy = (products, method, desc) => {
   })
 }
 
+const wordsFromTextArea = tag => {
+  return tag.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
+}
+
 const filterProducts = tags => {
   const filters = {}
-  filters.minimumReviewsCount = +tags.minimumReviewsCount.value
-  filters.negativeWords       = tags.negativeWords.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
-  filters.freeDelivery        = tags.freeDelivery.checked
-  filters.removeSponsored     = tags.removeSponsored.checked
-  filters.sortByUnit          = tags.sortByUnit.checked
+  for (const field of filtersFields) {
+    if (field.type === 'number') filters[field.name] = +tags[field.name].value
+    else if (field.type === 'checkbox') filters[field.name] = tags[field.name].checked
+    else if (field.type === 'textarea') filters[field.name] = wordsFromTextArea(tags[field.name])
+    else console.error(`Unknown field type: ${field.type}`)
+  }
   filters.minPrice            = +tags.minPrice.value
   filters.maxPrice            = +tags.maxPrice.value
   filters.order               = document.getElementById('s-result-sort-select').value
@@ -108,6 +137,7 @@ const filterProducts = tags => {
     let show =
       (reviewsCount >= filters.minimumReviewsCount) &&
       (filters.negativeWords.filter(word => title.includes(word)).length === 0) &&
+      filters.positiveWords.every(word => title.includes(word)) &&
       (filters.minPrice == 0 || price >= filters.minPrice) &&
       (filters.maxPrice == 0 || price <= filters.maxPrice) &&
       (!filters.freeDelivery || allText.includes('free delivery')) &&
@@ -165,11 +195,9 @@ const init = _ => {
   filtersTag.innerHTML = mySection + filtersTag.innerHTML
 
   const filterTags = {}
-  filterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
-  filterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
-  filterTags.freeDelivery        = document.getElementById('custom-amazon-filter-free-delivery')
-  filterTags.removeSponsored     = document.getElementById('custom-amazon-filter-remove-sponsored')
-  filterTags.sortByUnit          = document.getElementById('custom-amazon-filter-sort-by-unit')
+  for (const field of filtersFields) {
+    filterTags[field.name] = document.getElementById(fieldId(field))
+  }
 
   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
   if (document.getElementById('low-price')) {
