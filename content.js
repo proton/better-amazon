@@ -135,6 +135,7 @@ const filterProducts = tags => {
     let show =
       (reviewsCount >= filters.minimumReviewsCount) &&
       (filters.negativeWords.filter(word => title.includes(word)).length === 0) &&
+      (filters.positiveWords.filter(word => title.includes(word)).length !== 0) &&
       (filters.minPrice == 0 || price >= filters.minPrice) &&
       (filters.maxPrice == 0 || price <= filters.maxPrice) &&
       (!filters.freeDelivery || allText.includes('free delivery')) &&
