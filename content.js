@@ -4,8 +4,8 @@ const filtersFields = [
   { title: 'Free delivery', name: 'freeDelivery', type: 'checkbox' },
   { title: 'Remove sponsored', name: 'removeSponsored', type: 'checkbox' },
   { title: 'Sort by unit price', name: 'sortByUnit', type: 'checkbox' },
-  { title: 'Words shouldn not be in the title', name: 'negativeWords', type: 'textarea' },
-  { title: 'Words shouldn be present in the title', name: 'positiveWords', type: 'textarea' },
+  { title: 'Words should not be in the title', name: 'negativeWords', type: 'textarea' },
+  { title: 'Words should be present in the title', name: 'positiveWords', type: 'textarea' },
 ]
 
 const fieldId = field => `custom-amazon-filter-${field.name}`
