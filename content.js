@@ -106,13 +106,18 @@ const sortBy = (products, method, desc) => {
   })
 }
 
+const wordsFromTextArea = tag => {
+  return tag.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
+}
+
 const filterProducts = tags => {
   const filters = {}
-  filters.minimumReviewsCount = +tags.minimumReviewsCount.value
-  filters.negativeWords       = tags.negativeWords.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
-  filters.freeDelivery        = tags.freeDelivery.checked
-  filters.removeSponsored     = tags.removeSponsored.checked
-  filters.sortByUnit          = tags.sortByUnit.checked
+  for (const field of filtersFields) {
+    if (field.type === 'number') filters[field.name] = +tags[field.name].value
+    else if (field.type === 'checkbox') filters[field.name] = tags[field.name].checked
+    else if (field.type === 'textarea') filters[field.name] = wordsFromTextArea(tags[field.name])
+    else console.error(`Unknown field type: ${field.type}`)
+  }
   filters.minPrice            = +tags.minPrice.value
   filters.maxPrice            = +tags.maxPrice.value
   filters.order               = document.getElementById('s-result-sort-select').value
