@@ -1,3 +1,13 @@
+
+const filtersFields = [
+  { title: 'Minimal reviews count', name: 'minimumReviewsCount', type: 'number' },
+  { title: 'Free delivery', name: 'freeDelivery', type: 'checkbox' },
+  { title: 'Remove sponsored', name: 'removeSponsored', type: 'checkbox' },
+  { title: 'Sort by unit price', name: 'sortByUnit', type: 'checkbox' },
+  { title: 'Words shouldn not be in the title', name: 'negativeWords', type: 'textarea' },
+  { title: 'Words shouldn be present in the title', name: 'positiveWords', type: 'textarea' },
+]
+
 const mySection = `
 <div id="custom-amazon-filters" class="a-section a-spacing-none">
   <div id="p_85-title" class="a-section a-spacing-small">
@@ -165,11 +175,9 @@ const init = _ => {
   filtersTag.innerHTML = mySection + filtersTag.innerHTML
 
   const filterTags = {}
-  filterTags.minimumReviewsCount = document.getElementById('custom-amazon-filter-minimal-reviews-count')
-  filterTags.negativeWords       = document.getElementById('custom-amazon-filter-negative-words')
-  filterTags.freeDelivery        = document.getElementById('custom-amazon-filter-free-delivery')
-  filterTags.removeSponsored     = document.getElementById('custom-amazon-filter-remove-sponsored')
-  filterTags.sortByUnit          = document.getElementById('custom-amazon-filter-sort-by-unit')
+  for (const filterField of filtersFields) {
+    filterTags[filterField.name] = document.getElementById('custom-amazon-filter-' + filterField.name)
+  }
 
   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
   if (document.getElementById('low-price')) {
