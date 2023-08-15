@@ -4,38 +4,38 @@ const filtersFields = [
   { title: 'Free delivery', name: 'freeDelivery', type: 'checkbox' },
   { title: 'Remove sponsored', name: 'removeSponsored', type: 'checkbox' },
   { title: 'Sort by unit price', name: 'sortByUnit', type: 'checkbox' },
-  { title: 'Words should not be in the title', name: 'negativeWords', type: 'textarea' },
-  { title: 'Words should be present in the title', name: 'positiveWords', type: 'textarea' },
+  { title: 'Words should not be in the title:', name: 'negativeWords', type: 'textarea' },
+  { title: 'Words should be present in the title:', name: 'positiveWords', type: 'textarea' },
 ]
 
 let isStandardPriceBlockPresent
 
-const fieldId = field => `custom-amazon-filter-${field.name}`
+const fieldId = fieldName => `custom-amazon-filter-${fieldName}`
 
 generateLabelBlock = (field, beforeLabel = '') => {
   return `
-  <div id="p_85-title" class="a-section a-spacing-small">
+  <div class="a-section a-spacing-small">
     ${beforeLabel}
     <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
   </div>`
 }
 
 const generateNumberInput = (field) => {
-  return generateLabelBlock(field) + `
-  <span>
-    <input type="number" value="0" id="${fieldId(field)}">
-  </span>`
+  return generateLabelBlock(field) + `<input type="number" value="0" id="${fieldId(field.name)}">`
 }
 
 const generateCheckbox = (field) => {
-  return generateLabelBlock(field, `<input type="checkbox" id="${fieldId(field)}">`)
+  return generateLabelBlock(field, `<input type="checkbox" id="${fieldId(field.name)}">`)
 }
 
 const generateTextarea = (field) => {
-  return generateLabelBlock(field) + `
-  <span>
-    <textarea id="${fieldId(field)}" rows="4" cols="10"></textarea>
-  </span>`
+  return generateLabelBlock(field) + `<textarea id="${fieldId(field.name)}" rows="4" cols="10"></textarea>`
+}
+
+const generatePriceInput = (fieldName, placeholder) => {
+  return `
+  <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
+  <input type="text" maxlength="9" id="${fieldId(fieldName)}" placeholder="${placeholder}" name="${fieldName}" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding">`
 }
 
 const generateField = field => {
@@ -45,17 +45,17 @@ const generateField = field => {
   console.error(`Unknown field type: ${field.type}`)
 }
 
+const customPriceBlock =
+  `<div id="custom-amazon-filter-by-price-block">` +
+  generatePriceInput('low-price', 'Min') +
+  generatePriceInput('high-price', 'Max') +
+  `</div>`
+
 const mySection =
   `<div id="custom-amazon-filters" class="a-section a-spacing-none">` +
   filtersFields.map(field => generateField(field)).join('\n') +
-  `<div id="custom-amazon-filter-by-price-block">
-    <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
-    <input type="text" maxlength="9" id="custom-amazon-filter-low-price" placeholder="Min" name="low-price" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding">
-    <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
-    <input type="text" maxlength="9" id="custom-amazon-filter-high-price" placeholder="Max" name="high-price" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding">
-  </div>
-</div>
-`
+  customPriceBlock +
+  `</div>`
 
 const elementToggle = (element, show) => {
   element.style.display = show ? 'block' : 'none'
@@ -204,7 +204,7 @@ const init = _ => {
 
   const filterTags = {}
   for (const field of filtersFields) {
-    filterTags[field.name] = document.getElementById(fieldId(field))
+    filterTags[field.name] = document.getElementById(fieldId(field.name))
   }
 
   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
