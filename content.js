@@ -8,6 +8,8 @@ const filtersFields = [
   { title: 'Words should be present in the title', name: 'positiveWords', type: 'textarea' },
 ]
 
+let isStandardPriceBlockPresent
+
 const fieldId = field => `custom-amazon-filter-${field.name}`
 
 generateLabelBlock = (field, beforeLabel = '') => {
@@ -107,7 +109,10 @@ const sortBy = (products, method, desc) => {
 }
 
 const wordsFromTextArea = tag => {
-  return tag.value.toLowerCase().split(/,|\n/).map(word => word.trim()).filter(word => word.length > 0)
+  return tag.value.toLowerCase().
+    split(/,|\n/).
+    map(word => word.trim()).
+    filter(word => word.length > 0)
 }
 
 const filterProducts = tags => {
@@ -179,6 +184,8 @@ const loadFilters = (tags) => {
   const filters = JSON.parse(savedFilters)
   for (const key in tags) {
     if (filters[key] === undefined) continue
+    // do not load min/max price if standard price block is present, it's contr-intuitive
+    if (isStandardPriceBlockPresent && (key === 'minPrice' || key === 'maxPrice')) continue
     tags[key].value = filters[key]
   }
 }
@@ -201,7 +208,8 @@ const init = _ => {
   }
 
   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
-  if (document.getElementById('low-price')) {
+  isStandardPriceBlockPresent = !!document.getElementById('low-price')
+  if (isStandardPriceBlockPresent) {
     filterTags.minPrice = document.getElementById('low-price')
     filterTags.maxPrice = document.getElementById('high-price')
     elementToggle(customPriceBlock, false)
