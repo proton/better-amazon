@@ -10,29 +10,27 @@ const filtersFields = [
 
 const fieldId = field => `custom-amazon-filter-${field.name}`
 
-const generateNumberInput = (field) => {
+generateLabelBlock = (field, beforeLabel = '') => {
   return `
   <div id="p_85-title" class="a-section a-spacing-small">
+    ${beforeLabel}
     <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
-  </div>
+  </div>`
+}
+
+const generateNumberInput = (field) => {
+  return generateLabelBlock(field) + `
   <span>
     <input type="number" value="0" id="${fieldId(field)}">
   </span>`
 }
 
 const generateCheckbox = (field) => {
-  return `
-  <div id="p_85-title" class="a-section a-spacing-small">
-    <input type="checkbox" id="${fieldId(field)}">
-    <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
-  </div>`
+  return generateLabelBlock(field, `<input type="checkbox" id="${fieldId(field)}">`)
 }
 
 const generateTextarea = (field) => {
-  return `
-  <div id="p_85-title" class="a-section a-spacing-small">
-    <span class="a-size-base a-color-base puis-bold-weight-text">${field.title}</span>
-  </div>
+  return generateLabelBlock(field) + `
   <span>
     <textarea id="${fieldId(field)}" rows="4" cols="10"></textarea>
   </span>`
