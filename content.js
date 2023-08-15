@@ -171,12 +171,15 @@ const customFiltersKey = _ => {
 
 const loadFilters = (tags) => {
   const key = customFiltersKey()
-  const savedFilters = key ? localStorage.getItem(key) : null
-  if (savedFilters) {
-    const filters = JSON.parse(savedFilters)
-    for (const key in tags) {
-      tags[key].value = filters[key]
-    }
+  if (!key) return
+
+  const savedFilters = localStorage.getItem(key)
+  if (!savedFilters) return
+
+  const filters = JSON.parse(savedFilters)
+  for (const key in tags) {
+    if (filters[key] === undefined) continue
+    tags[key].value = filters[key]
   }
 }
 
