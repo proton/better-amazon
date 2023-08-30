@@ -79,7 +79,9 @@ const getTitle = product => {
 
 const getPrice = product => {
   try {
-    return +product.querySelector('.a-price .a-offscreen').innerText.match(/\d+\.\d+/)[0]
+    const priceEl = product.querySelector('.a-price .a-offscreen')
+    if (!priceEl) return null
+    return +priceEl.innerText.replaceAll(',', '').match(/\d+\.\d+/)[0]
   }
   catch(err) {
     console.debug([err, product])
@@ -103,7 +105,14 @@ const getUnitPrice = product => {
 
 const sortBy = (products, method, desc) => {
   return products.sort((a, b) => {
-    const diff = method(a) - method(b)
+    const va = method(a)
+    const vb = method(b)
+
+    if (va === vb) return 0
+    if (va === null) return 1
+    if (vb === null) return -1
+
+    const diff = va - vb
     return desc ? -diff : diff
   })
 }
@@ -141,8 +150,8 @@ const filterProducts = tags => {
       (reviewsCount >= filters.minimumReviewsCount) &&
       (filters.negativeWords.filter(word => title.includes(word)).length === 0) &&
       filters.positiveWords.every(word => title.includes(word)) &&
-      (filters.minPrice == 0 || price >= filters.minPrice) &&
-      (filters.maxPrice == 0 || price <= filters.maxPrice) &&
+      (filters.minPrice == 0 || price !== null && price >= filters.minPrice) &&
+      (filters.maxPrice == 0 || price !== null && price <= filters.maxPrice) &&
       (!filters.freeDelivery || allText.includes('free delivery')) &&
       !(filters.removeSponsored && isSponsored)
     elementToggle(product, show)
