@@ -81,7 +81,7 @@ const getPrice = product => {
   try {
     const priceEl = product.querySelector('.a-price .a-offscreen')
     if (!priceEl) return null
-    return +priceEl.innerText.match(/\d+\.\d+/)[0]
+    return +priceEl.innerText.replaceAll(',', '').match(/\d+\.\d+/)[0]
   }
   catch(err) {
     console.debug([err, product])
@@ -107,8 +107,6 @@ const sortBy = (products, method, desc) => {
   return products.sort((a, b) => {
     const va = method(a)
     const vb = method(b)
-
-    console.log([va, vb])
 
     if (va === vb) return 0
     if (va === null) return 1
