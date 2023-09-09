@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Better Amazon Experience",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Filter Amazon products by negative words and price",
   "permissions": [],
   "icons": {

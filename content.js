@@ -65,7 +65,11 @@ const getReviewCount = product => {
   try {
     const el = product.querySelector('.a-size-small a .a-size-base')
     if (!el) return 0
-    return +el.innerText.replaceAll(',', '').match(/(\d+)/)[0]
+    const text = el.innerText.replaceAll(',', '').match(/\d+k?/)[0]
+    if (text.endsWith("k")) {
+      return +text.match(/\d+/)[0] * 1000
+    }
+    else return +text
   }
   catch(err) {
     console.debug([err, product])
