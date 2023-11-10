@@ -78,7 +78,7 @@ const getReviewCount = product => {
 }
 
 const getTitle = product => {
-  return product.querySelector('h2').innerText.toLowerCase()
+  return Array.from(product.querySelectorAll('h2')).map(elem => elem.innerText.toLowerCase()).join(' ')
 }
 
 const getPrice = product => {
@@ -149,6 +149,8 @@ const filterProducts = tags => {
     const price        = getPrice(product)
     const allText      = product.innerText.toLowerCase()
     const isSponsored  = !!product.querySelector('.puis-sponsored-label-text')
+
+    console.log(title)
 
     let show =
       (reviewsCount >= filters.minimumReviewsCount) &&
