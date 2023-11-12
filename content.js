@@ -1,12 +1,16 @@
 
 const filtersFields = [
-  { title: 'Minimal reviews count', name: 'minimumReviewsCount', type: 'number' },
-  { title: 'Free delivery', name: 'freeDelivery', type: 'checkbox' },
-  { title: 'Remove sponsored', name: 'removeSponsored', type: 'checkbox' },
-  { title: 'Sort by unit price', name: 'sortByUnit', type: 'checkbox' },
-  { title: 'Words should not be in the title:', name: 'negativeWords', type: 'textarea' },
-  { title: 'Words should be present in the title:', name: 'positiveWords', type: 'textarea' },
+  { title: 'Minimal reviews count',                 name: 'minimumReviewsCount', type: 'number',   value: (tag) => +tag.value },
+  { title: 'Free delivery',                         name: 'freeDelivery',        type: 'checkbox', value: (tag) => tag.checked },
+  { title: 'Remove sponsored',                      name: 'removeSponsored',     type: 'checkbox', value: (tag) => tag.checked },
+  { title: 'Sort by unit price',                    name: 'sortByUnit',          type: 'checkbox', value: (tag) => tag.checked },
+  { title: 'Words should not be in the title:',     name: 'negativeWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
+  { title: 'Words should be present in the title:', name: 'positiveWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
 ]
+
+// filters.minPrice            = +tags.minPrice.value
+// filters.maxPrice            = +tags.maxPrice.value
+// filters.order               = document.getElementById('s-result-sort-select').value
 
 let isStandardPriceBlockPresent
 
@@ -128,38 +132,47 @@ const wordsFromTextArea = tag => {
     filter(word => word.length > 0)
 }
 
-const filterProducts = tags => {
+const getFilters = (tags) => {
   const filters = {}
-  for (const field of filtersFields) {
-    if (field.type === 'number') filters[field.name] = +tags[field.name].value
-    else if (field.type === 'checkbox') filters[field.name] = tags[field.name].checked
-    else if (field.type === 'textarea') filters[field.name] = wordsFromTextArea(tags[field.name])
-    else console.error(`Unknown field type: ${field.type}`)
-  }
-  filters.minPrice            = +tags.minPrice.value
-  filters.maxPrice            = +tags.maxPrice.value
-  filters.order               = document.getElementById('s-result-sort-select').value
 
-  saveFilters(filters)
+  for (const field of filtersFields) {
+    filters[field.name] = field.value(tags[field.name])
+  }
+
+  // TODO: put this to filtersFields:
+  filters.minPrice = +tags.minPrice.value
+  filters.maxPrice = +tags.maxPrice.value
+  filters.order    = document.getElementById('s-result-sort-select').value
+
+  return filters
+}
+
+const productData = product => {
+  return {
+    reviewsCount: getReviewCount(product),
+    title:        getTitle(product),
+    price:        getPrice(product),
+    allText:      product.innerText.toLowerCase(),
+    isSponsored:  !!product.querySelector('.puis-sponsored-label-text'),
+  }
+}
+
+const filterProducts = tags => {
+  const filters = getFilters(tags)
 
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   for (const product of products) {
-    const reviewsCount = getReviewCount(product)
-    const title        = getTitle(product)
-    const price        = getPrice(product)
-    const allText      = product.innerText.toLowerCase()
-    const isSponsored  = !!product.querySelector('.puis-sponsored-label-text')
+    const data = productData(product)
 
-    console.log(title)
+    const show =
+      (data.reviewsCount >= filters.minimumReviewsCount) &&
+      (filters.negativeWords.filter(word => data.title.includes(word)).length === 0) &&
+      filters.positiveWords.every(word => data.title.includes(word)) &&
+      (filters.minPrice == 0 || data.price !== null && data.price >= filters.minPrice) &&
+      (filters.maxPrice == 0 || data.price !== null && data.price <= filters.maxPrice) &&
+      (!filters.freeDelivery || data.allText.includes('free delivery')) &&
+      !(filters.removeSponsored && data.isSponsored)
 
-    let show =
-      (reviewsCount >= filters.minimumReviewsCount) &&
-      (filters.negativeWords.filter(word => title.includes(word)).length === 0) &&
-      filters.positiveWords.every(word => title.includes(word)) &&
-      (filters.minPrice == 0 || price !== null && price >= filters.minPrice) &&
-      (filters.maxPrice == 0 || price !== null && price <= filters.maxPrice) &&
-      (!filters.freeDelivery || allText.includes('free delivery')) &&
-      !(filters.removeSponsored && isSponsored)
     elementToggle(product, show)
   }
 
