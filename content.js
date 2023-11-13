@@ -39,7 +39,7 @@ const generateTextarea = (field) => {
 const generatePriceInput = (fieldName, placeholder) => {
   return `
   <span class="a-color-base s-ref-small-padding-left s-ref-price-currency">$</span>
-  <input type="text" maxlength="9" id="${fieldId(fieldName)}" placeholder="${placeholder}" name="${fieldName}" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding">`
+  <input type="text" maxlength="9" id="${fieldId(fieldName)}" placeholder="${placeholder}" name="${fieldName}" class="a-input-text a-spacing-top-mini s-ref-price-range s-ref-price-padding" style="max-width: 90%">`
 }
 
 const generateField = field => {
