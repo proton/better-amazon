@@ -192,7 +192,7 @@ const filterProducts = tags => {
 
 const findPageId = _ => {
   const url = window.location.href
-  const m = url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/) || url.match(/ref=([a-zA-Z\-_\d]+)/)
+  const m = url.match(/&crid=([A-Z0-9]+)/) || url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/) || url.match(/ref=([a-zA-Z\-_\d]+)/)
   if (m) return m[1]
 }
 
