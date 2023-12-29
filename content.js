@@ -244,22 +244,8 @@ const init = _ => {
   } else if (isRangePriceBlockPresent) {
     filterTags.minPrice = document.getElementsByName('low-price')[0]
     filterTags.maxPrice = document.getElementsByName('high-price')[0]
-
-    const sliderArea = document.getElementById('p_36/range-slider')
-    sliderArea.insertAdjacentHTML('beforeend', customPriceBlock)
-    const myMinPriceTag = document.getElementById('custom-amazon-filter-low-price')
-    const myMaxPriceTag = document.getElementById('custom-amazon-filter-high-price')
-
-    const pairs = [
-      [filterTags.minPrice, myMinPriceTag],
-      [filterTags.maxPrice, myMaxPriceTag],
-    ]
-
-    for (const [rangeTag, textTag] of pairs) {
-      textTag.value = rangeTag.value
-      rangeTag.addEventListener('change', _ => lazySetValue(textTag, rangeTag.value))
-      textTag.addEventListener('change',  _ => lazySetValue(rangeTag, textTag.value))
-    }
+    filterTags.minPrice.outerHTML = generatePriceInput('low-price', 'Min')
+    filterTags.maxPrice.outerHTML = generatePriceInput('high-price', 'Max')
   } else {
     filterTags.minPrice = document.getElementById('custom-amazon-filter-low-price')
     filterTags.maxPrice = document.getElementById('custom-amazon-filter-high-price')
