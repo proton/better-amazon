@@ -58,7 +58,6 @@ const customPriceBlock =
 const mySection =
   `<div id="custom-amazon-filters" class="a-section a-spacing-none">` +
   filtersFields.map(field => generateField(field)).join('\n') +
-  customPriceBlock +
   `</div>`
 
 const elementToggle = (element, show) => {
@@ -192,7 +191,7 @@ const filterProducts = tags => {
 
 const findPageId = _ => {
   const url = window.location.href
-  const m = url.match(/&crid=([A-Z0-9]+)/) || url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/) || url.match(/ref=([a-zA-Z\-_\d]+)/)
+  const m = url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/) || url.match(/ref=([a-zA-Z\-_\d]+)/)
   if (m) return m[1]
 }
 
@@ -224,27 +223,51 @@ const saveFilters = (filters) => {
   localStorage.setItem(key, JSON.stringify(filters))
 }
 
+const lazySetValue = (tag, value) => {
+  if (tag.value !== value) tag.value = value
+}
+
 const init = _ => {
   const filtersTag = document.querySelector('#s-refinements > .a-section')
   if (!filtersTag) return
 
   filtersTag.innerHTML = mySection + filtersTag.innerHTML
+  const mySectionTag = document.getElementById('custom-amazon-filters')
 
   const filterTags = {}
-  for (const field of filtersFields) {
-    filterTags[field.name] = document.getElementById(fieldId(field.name))
-  }
 
-  const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
   isStandardPriceBlockPresent = !!document.getElementById('low-price')
+  isRangePriceBlockPresent    = !!document.getElementById('p_36/range-slider_slider-item_lower-bound-slider')
   if (isStandardPriceBlockPresent) {
     filterTags.minPrice = document.getElementById('low-price')
     filterTags.maxPrice = document.getElementById('high-price')
-    elementToggle(customPriceBlock, false)
+  } else if (isRangePriceBlockPresent) {
+    filterTags.minPrice = document.getElementsByName('low-price')[0]
+    filterTags.maxPrice = document.getElementsByName('high-price')[0]
+
+    const sliderArea = document.getElementById('p_36/range-slider')
+    sliderArea.insertAdjacentHTML('beforeend', customPriceBlock)
+    const myMinPriceTag = document.getElementById('custom-amazon-filter-low-price')
+    const myMaxPriceTag = document.getElementById('custom-amazon-filter-high-price')
+
+    const pairs = [
+      [filterTags.minPrice, myMinPriceTag],
+      [filterTags.maxPrice, myMaxPriceTag],
+    ]
+
+    for (const [rangeTag, textTag] of pairs) {
+      textTag.value = rangeTag.value
+      rangeTag.addEventListener('change', _ => lazySetValue(textTag, rangeTag.value))
+      textTag.addEventListener('change',  _ => lazySetValue(rangeTag, textTag.value))
+    }
   } else {
     filterTags.minPrice = document.getElementById('custom-amazon-filter-low-price')
     filterTags.maxPrice = document.getElementById('custom-amazon-filter-high-price')
-    elementToggle(customPriceBlock, true)
+    mySectionTag.insertAdjacentHTML('beforeend', customPriceBlock)
+  }
+
+  for (const field of filtersFields) {
+    filterTags[field.name] = document.getElementById(fieldId(field.name))
   }
 
 
