@@ -103,7 +103,9 @@ const getUnitPrice = product => {
   if (!unitPriceEl) return Infinity
 
   try {
-    return +unitPriceEl.innerText.match(/\(.*?(\d+[\.,]+\d+)\//)[1]
+    const text  = unitPriceEl.innerText
+    const match = text.match(/\(.*?(\d+[\.,]+\d+)\//) || text.match(/\.*?(\d+[\.,]+\d+)/)
+    return +match[1]
   }
   catch(err) {
     console.debug([err, product])
