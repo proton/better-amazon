@@ -102,8 +102,12 @@ const getUnitPrice = product => {
   const unitPriceEl = priceEl && priceEl.parentElement.parentElement.querySelector('.a-size-base.a-color-secondary')
   if (!unitPriceEl) return Infinity
 
+  /// '(\n$0.03\n$0.03/Count)'
+
   try {
-    return +unitPriceEl.innerText.match(/\(.*?(\d+[\.,]+\d+)\//)[1]
+    const text = unitPriceEl.innerText
+    const m = text.match(/\(.*?(\d+[\.,]+\d+)\//) || text.match(/\.*?(\d+[\.,]+\d+)/)
+    return +m[1]
   }
   catch(err) {
     console.debug([err, product])
