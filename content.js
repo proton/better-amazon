@@ -4,8 +4,8 @@ const filtersFields = [
   { title: 'Free delivery',                         name: 'freeDelivery',        type: 'checkbox', value: (tag) => tag.checked },
   { title: 'Remove sponsored',                      name: 'removeSponsored',     type: 'checkbox', value: (tag) => tag.checked },
   { title: 'Sort by unit price',                    name: 'sortByUnit',          type: 'checkbox', value: (tag) => tag.checked },
-  { title: 'Words should not be in the title:',     name: 'negativeWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
-  { title: 'Words should be present in the title:', name: 'positiveWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
+  { title: 'Words should NOT be in the title:',     name: 'negativeWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
+  { title: 'Words should BE present in the title:', name: 'positiveWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
 ]
 
 // filters.minPrice            = +tags.minPrice.value
@@ -33,7 +33,7 @@ const generateCheckbox = (field) => {
 }
 
 const generateTextarea = (field) => {
-  return generateLabelBlock(field) + `<textarea id="${fieldId(field.name)}" rows="4" cols="10"></textarea>`
+  return generateLabelBlock(field) + `<textarea id="${fieldId(field.name)}" rows="3" cols="10"></textarea>`
 }
 
 const generatePriceInput = (fieldName, placeholder) => {
@@ -88,19 +88,19 @@ const getTitle = product => {
 const getPrice = product => {
   try {
     const priceEl = product.querySelector('.a-price .a-offscreen')
-    if (!priceEl) return null
+    if (!priceEl) return Infinity
     return +priceEl.innerText.replaceAll(',', '').match(/\d+\.\d+/)[0]
   }
   catch(err) {
     console.debug([err, product])
-    return 0
+    return Infinity
   }
 }
 
 const getUnitPrice = product => {
   const priceEl = product.querySelector('.a-price .a-offscreen')
   const unitPriceEl = priceEl && priceEl.parentElement.parentElement.querySelector('.a-size-base.a-color-secondary')
-  if (!unitPriceEl) return Infinity
+  if (!unitPriceEl) return getPrice(product)
 
   try {
     const text  = unitPriceEl.innerText
@@ -109,7 +109,7 @@ const getUnitPrice = product => {
   }
   catch(err) {
     console.debug([err, product])
-    return Infinity
+    return getPrice(product)
   }
 }
 
