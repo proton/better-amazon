@@ -88,19 +88,19 @@ const getTitle = product => {
 const getPrice = product => {
   try {
     const priceEl = product.querySelector('.a-price .a-offscreen')
-    if (!priceEl) return null
+    if (!priceEl) return Infinity
     return +priceEl.innerText.replaceAll(',', '').match(/\d+\.\d+/)[0]
   }
   catch(err) {
     console.debug([err, product])
-    return 0
+    return Infinity
   }
 }
 
 const getUnitPrice = product => {
   const priceEl = product.querySelector('.a-price .a-offscreen')
   const unitPriceEl = priceEl && priceEl.parentElement.parentElement.querySelector('.a-size-base.a-color-secondary')
-  if (!unitPriceEl) return Infinity
+  if (!unitPriceEl) return getPrice(product)
 
   try {
     const text  = unitPriceEl.innerText
@@ -109,7 +109,7 @@ const getUnitPrice = product => {
   }
   catch(err) {
     console.debug([err, product])
-    return Infinity
+    return getPrice(product)
   }
 }
 
