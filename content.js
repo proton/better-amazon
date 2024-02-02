@@ -4,8 +4,8 @@ const filtersFields = [
   { title: 'Free delivery',                         name: 'freeDelivery',        type: 'checkbox', value: (tag) => tag.checked },
   { title: 'Remove sponsored',                      name: 'removeSponsored',     type: 'checkbox', value: (tag) => tag.checked },
   { title: 'Sort by unit price',                    name: 'sortByUnit',          type: 'checkbox', value: (tag) => tag.checked },
-  { title: 'Words should not be in the title:',     name: 'negativeWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
-  { title: 'Words should be present in the title:', name: 'positiveWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
+  { title: 'Words should NOT be in the title:',     name: 'negativeWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
+  { title: 'Words should BE present in the title:', name: 'positiveWords',       type: 'textarea', value: (tag) => wordsFromTextArea(tag) },
 ]
 
 // filters.minPrice            = +tags.minPrice.value
@@ -33,7 +33,7 @@ const generateCheckbox = (field) => {
 }
 
 const generateTextarea = (field) => {
-  return generateLabelBlock(field) + `<textarea id="${fieldId(field.name)}" rows="4" cols="10"></textarea>`
+  return generateLabelBlock(field) + `<textarea id="${fieldId(field.name)}" rows="3" cols="10"></textarea>`
 }
 
 const generatePriceInput = (fieldName, placeholder) => {
