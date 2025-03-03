@@ -55,12 +55,6 @@ const customPriceBlock =
   generatePriceInput('high-price', 'Max') +
   `</div>`
 
-const mySection =
-  `<div id="custom-amazon-filters" class="a-section a-spacing-none">` +
-  filtersFields.map(field => generateField(field)).join('\n') +
-  customPriceBlock +
-  `</div>`
-
 const elementToggle = (element, show) => {
   element.style.display = show ? 'block' : 'none'
 }
@@ -227,11 +221,40 @@ const saveFilters = (filters) => {
 }
 
 const init = _ => {
-  const filtersTag = document.querySelector('#s-refinements > .a-section')
-  if (!filtersTag) return
+  let filtersTag = document.querySelector('.sf-rib-v1-toolbar .sf-rib-v1-all-pills-container')
+  if (filtersTag) {
+    const mySection = 
+      `<div id="custom-amazon-filters" class=a-section a-spacing-none sf-rib-v1-top-container sf-rib-v1-top-container-single-row">4324124231241223242341342423` +
+        filtersFields.map(field => {
+          return `
+            <span data-csa-c-type="element" data-csa-c-slot-id="nav-rib">
+              <a aria-current="false" aria-label="" class="a-link-normal sf-rib-v1-dropdown-pill-option sf-rib-v1-pill aok-inline-block aok-align-bottom aok-nowrap">
+                <div class="a-section a-spacing-none sf-rib-v1-dropdown-pill-content">
+                  <span class="sf-rib-v1-dropdown-pill-text">
+                    ${generateField(field)}
+                  </span>
+                </div>
+              </a>
+            </span>`
 
-  filtersTag.innerHTML = mySection + filtersTag.innerHTML
+        }).join('\n')
+      `</div>`
 
+    filtersTag.innerHTML = mySection + filtersTag.innerHTML
+
+  } else {
+    filtersTag = document.querySelector('#s-refinements > .a-section')
+    if (!filtersTag) return
+
+    const mySection =
+      `<div id="custom-amazon-filters" class="a-section a-spacing-none">` +
+      filtersFields.map(field => generateField(field)).join('\n') +
+      customPriceBlock +
+      `</div>`
+  
+    filtersTag.innerHTML = mySection + filtersTag.innerHTML
+  }
+  
   const filterTags = {}
   for (const field of filtersFields) {
     filterTags[field.name] = document.getElementById(fieldId(field.name))
