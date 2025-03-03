@@ -1,4 +1,3 @@
-
 const filtersFields = [
   { title: 'Minimal reviews count',                 name: 'minimumReviewsCount', type: 'number',   value: (tag) => +tag.value },
   { title: 'Free delivery',                         name: 'freeDelivery',        type: 'checkbox', value: (tag) => tag.checked },
@@ -221,10 +220,10 @@ const saveFilters = (filters) => {
 }
 
 const init = _ => {
-  let filtersTag = document.querySelector('.sf-rib-v1-toolbar .sf-rib-v1-all-pills-container')
+  let filtersTag = document.querySelector('.sf-rib-v1-toolbar .sf-rib-v1-top-container')
   if (filtersTag) {
-    const mySection = 
-      `<div id="custom-amazon-filters" class=a-section a-spacing-none sf-rib-v1-top-container sf-rib-v1-top-container-single-row">4324124231241223242341342423` +
+    const mySection =
+      `<div id="custom-amazon-filters">` +
         filtersFields.map(field => {
           return `
             <span data-csa-c-type="element" data-csa-c-slot-id="nav-rib">
@@ -236,8 +235,7 @@ const init = _ => {
                 </div>
               </a>
             </span>`
-
-        }).join('\n')
+        }).join('\n') +
       `</div>`
 
     filtersTag.innerHTML = mySection + filtersTag.innerHTML
@@ -260,16 +258,16 @@ const init = _ => {
     filterTags[field.name] = document.getElementById(fieldId(field.name))
   }
 
-  const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
+  const customPriceBlockEl = document.getElementById('custom-amazon-filter-by-price-block')
   isStandardPriceBlockPresent = !!document.getElementById('low-price')
   if (isStandardPriceBlockPresent) {
     filterTags.minPrice = document.getElementById('low-price')
     filterTags.maxPrice = document.getElementById('high-price')
-    elementToggle(customPriceBlock, false)
+    elementToggle(customPriceBlockEl, false)
   } else {
     filterTags.minPrice = document.getElementById('custom-amazon-filter-low-price')
     filterTags.maxPrice = document.getElementById('custom-amazon-filter-high-price')
-    elementToggle(customPriceBlock, true)
+    elementToggle(customPriceBlockEl, true)
   }
 
 
