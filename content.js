@@ -219,75 +219,53 @@ const saveFilters = (filters) => {
   localStorage.setItem(key, JSON.stringify(filters))
 }
 
-const init = _ => {
-  let filtersTag = document.querySelector('.sf-rib-v1-toolbar .sf-rib-v1-top-container')
-  if (filtersTag) {
-    const mySection =
-      `<div id="custom-amazon-filters">` +
-        filtersFields.map(field => {
-          return `
-            <span data-csa-c-type="element" data-csa-c-slot-id="nav-rib">
-              <a aria-current="false" aria-label="" class="a-link-normal sf-rib-v1-dropdown-pill-option sf-rib-v1-pill aok-inline-block aok-align-bottom aok-nowrap">
-                <div class="a-section a-spacing-none sf-rib-v1-dropdown-pill-content">
-                  <span class="sf-rib-v1-dropdown-pill-text">
-                    ${generateField(field)}
-                  </span>
-                </div>
-              </a>
-            </span>`
-        }).join('\n') +
-      `</div>`
-
-    filtersTag.innerHTML = mySection + filtersTag.innerHTML
-
-  } else {
-    filtersTag = document.querySelector('#s-refinements > .a-section')
-    if (!filtersTag) return
-
-    const mySection =
-      `<div id="custom-amazon-filters" class="a-section a-spacing-none">` +
-      filtersFields.map(field => generateField(field)).join('\n') +
-      customPriceBlock +
-      `</div>`
-  
-    filtersTag.innerHTML = mySection + filtersTag.innerHTML
+// Listen for messages from popup.js and apply filters
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'APPLY_FILTERS') {
+    applyFiltersFromMessage(message.filters)
   }
-  
-  const filterTags = {}
-  for (const field of filtersFields) {
-    filterTags[field.name] = document.getElementById(fieldId(field.name))
-  }
+});
 
-  const customPriceBlockEl = document.getElementById('custom-amazon-filter-by-price-block')
-  isStandardPriceBlockPresent = !!document.getElementById('low-price')
-  if (isStandardPriceBlockPresent) {
-    filterTags.minPrice = document.getElementById('low-price')
-    filterTags.maxPrice = document.getElementById('high-price')
-    elementToggle(customPriceBlockEl, false)
-  } else {
-    filterTags.minPrice = document.getElementById('custom-amazon-filter-low-price')
-    filterTags.maxPrice = document.getElementById('custom-amazon-filter-high-price')
-    elementToggle(customPriceBlockEl, true)
-  }
-
-
-  loadFilters(filterTags)
-  filterProducts(filterTags)
-
-  for (const key in filterTags) {
-    filterTags[key].addEventListener('change', _ => filterProducts(filterTags))
-  }
-
-  // TODO: ugly hack to detect page change
-  let currentUrl = window.location.href
-  setInterval(function() {
-    if (currentUrl != window.location.href) {
-      currentUrl = window.location.href
-      setTimeout(_ => { filterProducts(filterTags) }, 0)
-      setTimeout(_ => { filterProducts(filterTags) }, 500)
-      setTimeout(_ => { filterProducts(filterTags) }, 1000)
-    }
-  }, 500)
+function applyFiltersFromMessage(filters) {
+  // Convert textarea fields to arrays
+  filters.negativeWords = filters.negativeWords ? filters.negativeWords.split(/,|\n/).map(w => w.trim()).filter(Boolean) : [];
+  filters.positiveWords = filters.positiveWords ? filters.positiveWords.split(/,|\n/).map(w => w.trim()).filter(Boolean) : [];
+  // Convert numbers
+  filters.minimumReviewsCount = +filters.minimumReviewsCount || 0;
+  filters.minPrice = +filters.minPrice || 0;
+  filters.maxPrice = +filters.maxPrice || 0;
+  filterProductsFromPopup(filters);
 }
 
-init()
+function filterProductsFromPopup(filters) {
+  let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]');
+  for (const product of products) {
+    const data = productData(product);
+    const show =
+      (data.reviewsCount >= filters.minimumReviewsCount) &&
+      (filters.negativeWords.filter(word => data.title.includes(word)).length === 0) &&
+      filters.positiveWords.every(word => data.title.includes(word)) &&
+      (filters.minPrice == 0 || data.price !== null && data.price >= filters.minPrice) &&
+      (filters.maxPrice == 0 || data.price !== null && data.price <= filters.maxPrice) &&
+      (!filters.freeDelivery || data.allText.includes('free delivery')) &&
+      !(filters.removeSponsored && data.isSponsored);
+    elementToggle(product, show);
+  }
+  // Sorting
+  if (filters.sortByUnit) {
+    products = Array.from(products);
+    products = sortBy(products, getUnitPrice);
+    const parent = products[0].parentElement;
+    parent.textContent = '';
+    for (const product of products) {
+      parent.appendChild(product);
+    }
+  }
+}
+
+// On page load, apply filters from chrome.storage if present
+chrome.storage.local.get('amazonFilters', (data) => {
+  if (data.amazonFilters) {
+    applyFiltersFromMessage(data.amazonFilters);
+  }
+});
