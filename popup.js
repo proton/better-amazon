@@ -41,8 +41,6 @@ const filterProducts = tags => {
 }
 
 const init = _ => {
-  // const form = document.getElementById('filtersForm')
-
   const filterTags = {}
   for (const field of filtersFields) {
     filterTags[field.name] = document.getElementById(field.name)
@@ -65,28 +63,6 @@ const init = _ => {
       setTimeout(_ => { filterProducts(filterTags) }, 1000)
     }
   }, 500)
-
-
-  // form.addEventListener('submit', (e) => {
-  //   e.preventDefault()
-  //   // const filters = {}
-  //   // Array.from(form.elements).forEach(el => {
-  //   //   console.log()
-  //   //   if (!el.name) return;
-  //   //   if (el.type === 'checkbox') filters[el.name] = el.checked;
-  //   //   else if (el.type === 'textarea') filters[el.name] = el.value.trim();
-  //   //   else filters[el.name] = el.value;
-  //   // });
-  //   // chrome.storage.local.set({ amazonFilters: filters }, () => {
-  //   //   // Send filters to content.js in active tab
-  //   //   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-  //   //     if (tabs[0]) {
-  //   //       chrome.tabs.sendMessage(tabs[0].id, { type: 'APPLY_FILTERS', filters })
-  //   //     }
-  //   //   });
-  //   //   window.close()
-  //   // })
-  // })
 }
 
 init()

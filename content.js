@@ -1,14 +1,3 @@
-const filtersFields = [
-  { name: 'minimumReviewsCount', value: (tag) => +tag.value },
-  { name: 'freeDelivery',        value: (tag) => tag.checked },
-  { name: 'removeSponsored',     value: (tag) => tag.checked },
-  { name: 'sortByUnitPrice',     value: (tag) => tag.checked },
-  { name: 'negativeWords',       value: (tag) => wordsFromTextArea(tag) },
-  { name: 'positiveWords',       value: (tag) => wordsFromTextArea(tag) },
-  { name: 'minPrice',            value: (tag) => +tag.value },
-  { name: 'maxPrice',            value: (tag) => +tag.value },
-]
-
 const elementToggle = (element, show) => {
   element.style.display = show ? 'block' : 'none'
 }
@@ -75,28 +64,6 @@ const sortBy = (products, method, desc) => {
   })
 }
 
-const wordsFromTextArea = tag => {
-  return tag.value.toLowerCase().
-    split(/,|\n/).
-    map(word => word.trim()).
-    filter(word => word.length > 0)
-}
-
-// const getFilters = (tags) => {
-//   const filters = {}
-
-//   for (const field of filtersFields) {
-//     filters[field.name] = field.value(tags[field.name])
-//   }
-
-//   // TODO: put this to filtersFields:
-//   filters.minPrice = +tags.minPrice.value
-//   filters.maxPrice = +tags.maxPrice.value
-//   filters.order    = document.getElementById('s-result-sort-select').value
-
-//   return filters
-// }
-
 const productData = product => {
   return {
     reviewsCount: getReviewCount(product),
@@ -142,29 +109,6 @@ const productData = product => {
 // }
 
 // const init = _ => {
-//   const filtersTag = document.querySelector('#s-refinements > .a-section')
-//   if (!filtersTag) return
-
-//   filtersTag.innerHTML = mySection + filtersTag.innerHTML
-
-//   const filterTags = {}
-//   for (const field of filtersFields) {
-//     filterTags[field.name] = document.getElementById(fieldId(field.name))
-//   }
-
-//   const customPriceBlock = document.getElementById('custom-amazon-filter-by-price-block')
-//   isStandardPriceBlockPresent = !!document.getElementById('low-price')
-//   if (isStandardPriceBlockPresent) {
-//     filterTags.minPrice = document.getElementById('low-price')
-//     filterTags.maxPrice = document.getElementById('high-price')
-//     elementToggle(customPriceBlock, false)
-//   } else {
-//     filterTags.minPrice = document.getElementById('custom-amazon-filter-low-price')
-//     filterTags.maxPrice = document.getElementById('custom-amazon-filter-high-price')
-//     elementToggle(customPriceBlock, true)
-//   }
-
-
 //   loadFilters(filterTags)
 //   filterProducts(filterTags)
 
