@@ -187,6 +187,26 @@ function filterProducts(filters) {
       parent.appendChild(product)
     }
   }
+
+  const extraProductSections = []
+  try {
+    const titleEl = document.getElementById('loom-desktop-bottom-slot_featuredasins-heading')
+    const parent = titleEl.closest('.s-widget-container')
+    if (parent) {
+      extraProductSections.push(parent)
+    }
+  } catch (err) { }
+  try {
+    const titleEl = document.getElementById('loom-desktop-inline-slot_featuredasins-heading')
+    const parent = titleEl.closest('.s-widget-container')
+    if (parent) {
+      extraProductSections.push(parent)
+    }
+  } catch (err) { }
+  
+  for (const element of extraProductSections) {
+    elementToggle(element, filters.removeFeaturedProducts)
+  }
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
