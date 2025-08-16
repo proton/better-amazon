@@ -189,20 +189,19 @@ function filterProducts(filters) {
   }
 
   const extraProductSections = []
-  try {
-    const titleEl = document.getElementById('loom-desktop-bottom-slot_featuredasins-heading')
-    const parent = titleEl.closest('.s-widget-container')
-    if (parent) {
-      extraProductSections.push(parent)
-    }
-  } catch (err) { }
-  try {
-    const titleEl = document.getElementById('loom-desktop-inline-slot_featuredasins-heading')
-    const parent = titleEl.closest('.s-widget-container')
-    if (parent) {
-      extraProductSections.push(parent)
-    }
-  } catch (err) { }
+  const extraProductSectionTitleIds = [
+    'loom-desktop-bottom-slot_featuredasins-heading',
+    'loom-desktop-inline-slot_featuredasins-heading',
+  ]
+  for (const elementId of extraProductSectionTitleIds) {
+    try {
+      const titleEl = document.getElementById(elementId)
+      const parent = titleEl.closest('.s-widget-container')
+      if (parent) {
+        extraProductSections.push(parent)
+      }
+    } catch (err) { }
+  }
   
   for (const element of extraProductSections) {
     elementToggle(element, filters.removeFeaturedProducts)
