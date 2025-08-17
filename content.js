@@ -135,7 +135,7 @@ function filterProducts(filters) {
     parent.textContent = ''
   }
 
-  if (filters.sortByUnit) {
+  if (filters.sortByUnitPrice) {
     products = sortBy(products, getUnitPrice)
   }
 
