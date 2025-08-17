@@ -4,11 +4,13 @@ const elementToggle = (element, show) => {
 
 const getReviewCount = product => {
   try {
-    const el = product.querySelector('.a-size-small a .a-size-base')
+    const el =
+      product.querySelector('.alf-search-csa-instrumentation-wrapper[data-csa-c-slot-id="alf-reviews"]') ||
+      product.querySelector('.a-size-small a .a-size-base')
     if (!el) return 0
-    const text = el.innerText.replaceAll(',', '').match(/\d+k?/)[0]
-    if (text.endsWith("k")) {
-      return +text.match(/\d+/)[0] * 1000
+    const text = el.innerText.replaceAll(',', '').match(/[\d\.]+[kK]?/)[0]
+    if (text.endsWith("k") || text.endsWith("K")) {
+      return +text.match(/[\d\.]+/)[0] * 1000
     }
     else return +text
   }
@@ -110,6 +112,8 @@ const productData = product => {
 
 function filterProducts(filters) {
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
+  products = Array.from(products)
+
   for (const product of products) {
     const data = productData(product)
     const show =
@@ -124,7 +128,6 @@ function filterProducts(filters) {
   }
 
   // Sometimes elements are in different blocks
-  products = Array.from(products)
   let parents = products.map(product => product.parentElement)
   const mainParent = parents[0]
   parents = [...new Set(parents)]
