@@ -1,13 +1,12 @@
 const filtersFields = [
-  { name: 'minimumReviewsCount',    value: (tag) => +tag.value },
-  { name: 'freeDelivery',           value: (tag) => tag.checked },
-  { name: 'removeSponsored',        value: (tag) => tag.checked },
-  { name: 'removeFeaturedProducts', value: (tag) => tag.checked },
-  { name: 'sortByUnitPrice',        value: (tag) => tag.checked },
-  { name: 'negativeWords',          value: (tag) => wordsFromTextArea(tag) },
-  { name: 'positiveWords',          value: (tag) => wordsFromTextArea(tag) },
-  { name: 'minPrice',               value: (tag) => +tag.value },
-  { name: 'maxPrice',               value: (tag) => +tag.value },
+  { name: 'minimumReviewsCount',        value: (tag) => +tag.value },
+  { name: 'freeDelivery',               value: (tag) => tag.checked },
+  { name: 'removeSponsoredAndFeatured', value: (tag) => tag.checked },
+  { name: 'sortByUnitPrice',            value: (tag) => tag.checked },
+  { name: 'negativeWords',              value: (tag) => wordsFromTextArea(tag) },
+  { name: 'positiveWords',              value: (tag) => wordsFromTextArea(tag) },
+  { name: 'minPrice',                   value: (tag) => +tag.value },
+  { name: 'maxPrice',                   value: (tag) => +tag.value },
 ]
 
 const wordsFromTextArea = tag => {

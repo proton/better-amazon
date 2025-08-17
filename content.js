@@ -162,8 +162,6 @@ const productData = product => {
 // }
 
 function filterProducts(filters) {
-  console.log(filters)
-
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   for (const product of products) {
     const data = productData(product)
@@ -174,18 +172,25 @@ function filterProducts(filters) {
       (filters.minPrice == 0 || data.price !== null && data.price >= filters.minPrice) &&
       (filters.maxPrice == 0 || data.price !== null && data.price <= filters.maxPrice) &&
       (!filters.freeDelivery || data.allText.includes('free delivery')) &&
-      !(filters.removeSponsored && data.isSponsored)
+      !(filters.removeSponsoredAndFeatured && data.isSponsored)
     elementToggle(product, show)
   }
-  // Sorting
-  if (filters.sortByUnit) {
-    products = Array.from(products)
-    products = sortBy(products, getUnitPrice)
-    const parent = products[0].parentElement
+
+  // Sometimes elements are in different blocks
+  products = Array.from(products)
+  let parents = products.map(product => product.parentElement)
+  const mainParent = parents[0]
+  parents = [...new Set(parents)]
+  for (const parent of parents) {
     parent.textContent = ''
-    for (const product of products) {
-      parent.appendChild(product)
-    }
+  }
+
+  if (filters.sortByUnit) {
+    products = sortBy(products, getUnitPrice)
+  }
+
+  for (const product of products) {
+    mainParent.appendChild(product)
   }
 
   const extraProductSections = []
@@ -204,7 +209,7 @@ function filterProducts(filters) {
   }
   
   for (const element of extraProductSections) {
-    elementToggle(element, filters.removeFeaturedProducts)
+    elementToggle(element, filters.removeSponsoredAndFeatured)
   }
 }
 
