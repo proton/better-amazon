@@ -108,59 +108,6 @@ const productData = product => {
 //   localStorage.setItem(key, JSON.stringify(filters))
 // }
 
-// const init = _ => {
-//   loadFilters(filterTags)
-//   filterProducts(filterTags)
-
-//   for (const key in filterTags) {
-//     filterTags[key].addEventListener('change', _ => filterProducts(filterTags))
-//   }
-
-//   // TODO: ugly hack to detect page change
-//   let currentUrl = window.location.href
-//   setInterval(function() {
-//     if (currentUrl != window.location.href) {
-//       currentUrl = window.location.href
-//       setTimeout(_ => { filterProducts(filterTags) }, 0)
-//       setTimeout(_ => { filterProducts(filterTags) }, 500)
-//       setTimeout(_ => { filterProducts(filterTags) }, 1000)
-//     }
-//   }, 500)
-// }
-
-// const filterProducts = tags => {
-//   const filters = getFilters(tags)
-
-//   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
-//   for (const product of products) {
-//     const data = productData(product)
-
-//     const show =
-//       (data.reviewsCount >= filters.minimumReviewsCount) &&
-//       (filters.negativeWords.filter(word => data.title.includes(word)).length === 0) &&
-//       filters.positiveWords.every(word => data.title.includes(word)) &&
-//       (filters.minPrice == 0 || data.price !== null && data.price >= filters.minPrice) &&
-//       (filters.maxPrice == 0 || data.price !== null && data.price <= filters.maxPrice) &&
-//       (!filters.freeDelivery || data.allText.includes('free delivery')) &&
-//       !(filters.removeSponsored && data.isSponsored)
-
-//     elementToggle(product, show)
-//   }
-
-//   if (filters.sortByUnit || filters.order === 'price-asc-rank' || filters.order === 'price-desc-rank') {
-//     products = Array.from(products)
-//     if (filters.sortByUnit)                       products = sortBy(products, getUnitPrice)
-//     else if (filters.order === 'price-asc-rank')  products = sortBy(products, getPrice)
-//     else if (filters.order === 'price-desc-rank') products = sortBy(products, getPrice, true)
-
-//     const parent = products[0].parentElement
-//     parent.textContent = ''
-//     for (const product of products) {
-//       parent.appendChild(product)
-//     }
-//   }
-// }
-
 function filterProducts(filters) {
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   for (const product of products) {
