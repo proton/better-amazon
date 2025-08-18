@@ -26,31 +26,56 @@ const getFilters = (tags) => {
   return filters
 }
 
-const filterProducts = tags => {
-  const filters = getFilters(tags)
-  // chrome.storage.local.set({ amazonFilters: filters }, () => {
-    // Send filters to content.js in active tab
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      console.log(['APPLY', tabs])
-      const tab = tabs[0]
-      if (tab) {
-        chrome.tabs.sendMessage(tab.id, { type: 'APPLY_FILTERS', filters });
+const sendMessageToCurrentTab = (type, payload = {}, callback = null) => {
+  console.log('SEND MESSAGE:', type, payload)
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs[0]
+    if (tab) {
+      chrome.tabs.sendMessage(tab.id, { type, payload }).then((response) => {
+        console.log('RECEIVE MESSAGE:', type, response)
+        if (callback) {
+          callback(response)
+        }
+      }).catch(console.error)
+    }
+  })
+}
+
+const loadFilters = (state) => {
+  const filterTags = state.filters || {}
+  sendMessageToCurrentTab('LOAD_FILTERS', null, (response) => {
+    const filters = response.filters || {}
+    Object.entries(filters).forEach(([key, value]) => {
+      if (filterTags[key]) {
+        filterTags[key].value = value
       }
     })
-  // })
+
+    state.initialized = true
+    filterProducts(state)
+  })
+}
+
+const filterProducts = (state) => {
+  if (!state.initialized) return
+  sendMessageToCurrentTab('APPLY_FILTERS', state.filters)
 }
 
 const init = _ => {
-  const filterTags = {}
+  const state = {
+    initialized: false,
+    filters: {}
+  }
+
+  const filterTags = state.filters
   for (const field of filtersFields) {
     filterTags[field.name] = document.getElementById(field.name)
   }
 
-  // loadFilters(filterTags)
-  filterProducts(filterTags)
+  loadFilters(state)
 
   for (const key in filterTags) {
-    filterTags[key].addEventListener('change', _ => filterProducts(filterTags))
+    filterTags[key].addEventListener('change', _ => filterProducts(state))
   }
 
   // TODO: ugly hack to detect page change
@@ -58,9 +83,9 @@ const init = _ => {
   setInterval(function() {
     if (currentUrl != window.location.href) {
       currentUrl = window.location.href
-      setTimeout(_ => { filterProducts(filterTags) }, 0)
-      setTimeout(_ => { filterProducts(filterTags) }, 500)
-      setTimeout(_ => { filterProducts(filterTags) }, 1000)
+      setTimeout(_ => { filterProducts(state) }, 0)
+      setTimeout(_ => { filterProducts(state) }, 500)
+      setTimeout(_ => { filterProducts(state) }, 1000)
     }
   }, 500)
 }

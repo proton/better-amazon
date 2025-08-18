@@ -76,41 +76,46 @@ const productData = product => {
   }
 }
 
-// const findPageId = _ => {
-//   const url = window.location.href
-//   const m = url.match(/&crid=([A-Z0-9]+)/) || url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/) || url.match(/k=([a-zA-Z\-\+_\d]+)/) || url.match(/ref=([a-zA-Z\-_\d]+)/)
-//   if (m) return m[1]
-// }
+const findPageId = _ => {
+  const url = window.location.href
+  const m = url.match(/&crid=([A-Z0-9]+)/) || url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/) || url.match(/k=([a-zA-Z\-\+_\d]+)/) || url.match(/ref=([a-zA-Z\-_\d]+)/)
+  if (m) return m[1]
+}
 
-// const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
-// const customFiltersKey = _ => {
-//   const id = findPageId()
-//   if (id) return FILTERS_KEY + '-' + id
-// }
+const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
+const customFiltersKey = _ => {
+  const id = findPageId()
+  if (id) return FILTERS_KEY + '-' + id
+}
 
-// const loadFilters = (tags) => {
-//   const key = customFiltersKey()
-//   if (!key) return
+const loadFilters = () => {
+  const key = customFiltersKey()
+  if (!key) return
 
-//   const savedFilters = localStorage.getItem(key)
-//   if (!savedFilters) return
+  const savedFilters = localStorage.getItem(key)
+  if (!savedFilters) return
 
-//   const filters = JSON.parse(savedFilters)
-//   for (const key in tags) {
-//     if (filters[key] === undefined) continue
-//     // do not load min/max price if standard price block is present, it's contr-intuitive
-//     if (isStandardPriceBlockPresent && (key === 'minPrice' || key === 'maxPrice')) continue
-//     tags[key].value = filters[key]
-//   }
-// }
+  console.log('savedFilters:', savedFilters)
 
-// const saveFilters = (filters) => {
-//   const key = customFiltersKey()
-//   if (!key) return
-//   localStorage.setItem(key, JSON.stringify(filters))
-// }
+  let filters = {}
+  try {
+    filters = JSON.parse(savedFilters)
+    filterProducts(filters)
+  } catch (err) {
+    console.error('Failed to load filters:', err)
+  }
+  return filters
+}
+
+const saveFilters = (filters) => {
+  const key = customFiltersKey()
+  if (!key) return
+  localStorage.setItem(key, JSON.stringify(filters))
+}
 
 function filterProducts(filters) {
+  console.log('filterProducts:', filters)
+  saveFilters(filters)
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   products = Array.from(products)
 
@@ -163,8 +168,13 @@ function filterProducts(filters) {
   }
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'APPLY_FILTERS') {
-    filterProducts(message.filters)
+chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+  const { type, payload } = message
+  console.log('CLIENT RECEIVE MESSAGE:', type, payload)
+  if (type === 'APPLY_FILTERS') {
+    filterProducts(payload)
+  } else if (type === 'LOAD_FILTERS') {
+    const filters = loadFilters()
+    return Promise.resolve({ filters: filters })
   }
 })
