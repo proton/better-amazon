@@ -76,41 +76,57 @@ const productData = product => {
   }
 }
 
-const findPageId = _ => {
+const LOCATION_REGEXPS = [
+  /&crid=([A-Z0-9]+)/,
+  /&node=(\d+)/,
+  /rh=n%3A(\d+)/,
+  /k=([a-zA-Z\-\+_\d]+)/,
+  /ref=([a-zA-Z\-_\d]+)/,
+]
+
+const findPageIds = _ => {
   const url = window.location.href
-  const m = url.match(/&crid=([A-Z0-9]+)/) || url.match(/&node=(\d+)/) || url.match(/rh=n%3A(\d+)/) || url.match(/k=([a-zA-Z\-\+_\d]+)/) || url.match(/ref=([a-zA-Z\-_\d]+)/)
-  if (m) return m[1]
+  return LOCATION_REGEXPS.
+    map(regex => url.match(regex)).
+    filter(m => m).
+    map(m => m[1]).
+    filter(str => str)
 }
 
 const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
-const customFiltersKey = _ => {
-  const id = findPageId()
-  if (id) return FILTERS_KEY + '-' + id
+const customFiltersKeys = _ => {
+  const ids = findPageIds()
+  return ids.map(id => FILTERS_KEY + '-' + id)
 }
 
 const loadFilters = () => {
-  const key = customFiltersKey()
-  if (!key) return
-
-  const savedFilters = localStorage.getItem(key)
-  if (!savedFilters) return
-
-  console.log('savedFilters:', savedFilters)
-
   let filters = {}
-  try {
-    filters = JSON.parse(savedFilters)
-    filterProducts(filters)
-  } catch (err) {
-    console.error('Failed to load filters:', err)
+  const keys = customFiltersKeys()
+  if (keys.length === 0) return
+
+  for (const key of keys) {
+    const savedFilters = localStorage.getItem(key)
+    if (!savedFilters) continue
+
+    console.log('savedFilters:', savedFilters)
+
+    try {
+      filters = JSON.parse(savedFilters)
+      filterProducts(filters)
+      return filters
+    } catch (err) {
+      console.error('Failed to load filters:', err)
+    }
   }
   return filters
 }
 
 const saveFilters = (filters) => {
-  const key = customFiltersKey()
-  if (!key) return
-  localStorage.setItem(key, JSON.stringify(filters))
+  const keys = customFiltersKeys()
+  if (keys.length === 0) return
+  for (const key of keys) {
+    localStorage.setItem(key, JSON.stringify(filters))
+  }
 }
 
 function filterProducts(filters) {
