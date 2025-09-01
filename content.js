@@ -129,26 +129,26 @@ const saveFilters = (filters) => {
   }
 }
 
-const filterByMinimumReviewsCount = (product, filters) => 
-  product.reviewsCount >= filters.minimumReviewsCount
+const filterByMinimumReviewsCount = (product, filter) => 
+  product.reviewsCount >= filter
 
-const filterByNegativeWords = (product, filters) => 
-  filters.negativeWords.filter(word => product.title.includes(word)).length === 0
+const filterByNegativeWords = (product, filter) => 
+  filter.filter(word => product.title.includes(word)).length === 0
 
-const filterByPositiveWords = (product, filters) => 
-  filters.positiveWords.every(word => product.title.includes(word))
+const filterByPositiveWords = (product, filter) => 
+  filter.every(word => product.title.includes(word))
 
-const filterByMaxPrice = (product, filters) => 
-  filters.minPrice == 0 || product.price !== null && product.price <= filters.maxPrice
+const filterByMaxPrice = (product, filter) => 
+  filter == 0 || product.price !== null && product.price <= filter
 
-const filterByMinPrice = (product, filters) => 
-  filters.minPrice == 0 || product.price !== null && product.price >= filters.minPrice
+const filterByMinPrice = (product, filter) => 
+  filter == 0 || product.price !== null && product.price >= filter
 
-const filterByFreeDelivery = (product, filters) => 
-  filters.freeDelivery === false || product.allText.includes('free delivery')
+const filterByFreeDelivery = (product, filter) => 
+  filter === false || product.allText.includes('free delivery')
 
-const filterBySponsoredAndFeatured = (product, filters) =>
-  filters.removeSponsoredAndFeatured === false || product.isSponsored
+const filterBySponsoredAndFeatured = (product, filter) =>
+  filter === false || product.isSponsored
 
 const FILTER_METHODS = [
   ['minimumReviewsCount',        filterByMinimumReviewsCount],
@@ -168,7 +168,7 @@ function filterProducts(filters) {
 
   for (const product of products) {
     const data = productData(product)
-    const show = FILTER_METHODS.every(([key, method]) => !Object.hasOwn(filters, key) || method(data, filters))
+    const show = FILTER_METHODS.every(([key, method]) => !Object.hasOwn(filters, key) || method(data, filters[key]))
     elementToggle(product, show)
   }
 
