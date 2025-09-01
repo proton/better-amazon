@@ -83,17 +83,6 @@ const init = _ => {
     state.filterTags[key].addEventListener('change', _ => filterProducts(state))
     state.filterTags[key].addEventListener('input',  _ => filterProducts(state))
   }
-
-  // TODO: ugly hack to detect page change
-  let currentUrl = window.location.href
-  setInterval(function() {
-    if (currentUrl != window.location.href) {
-      currentUrl = window.location.href
-      setTimeout(_ => { filterProducts(state) }, 0)
-      setTimeout(_ => { filterProducts(state) }, 500)
-      setTimeout(_ => { filterProducts(state) }, 1000)
-    }
-  }, 500)
 }
 
 init()

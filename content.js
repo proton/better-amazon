@@ -130,8 +130,6 @@ const saveFilters = (filters) => {
 }
 
 function filterProducts(filters) {
-  console.log('filterProducts:', filters)
-  saveFilters(filters)
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   products = Array.from(products)
 
@@ -184,13 +182,37 @@ function filterProducts(filters) {
   }
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
-  const { type, payload } = message
-  console.log('CLIENT RECEIVE MESSAGE:', type, payload)
-  if (type === 'APPLY_FILTERS') {
-    filterProducts(payload)
-  } else if (type === 'LOAD_FILTERS') {
-    const filters = loadFilters()
-    return Promise.resolve({ filters: filters })
+const init = _ => {
+  let filters = {}
+
+  const reloadFilters = _ => {
+    filters = loadFilters()
+    filterProducts(filters)
   }
-})
+
+  chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+    const { type, payload } = message
+    console.log('CLIENT RECEIVE MESSAGE:', type, payload)
+    if (type === 'APPLY_FILTERS') {
+      saveFilters(filters)
+      filterProducts(payload)
+    } else if (type === 'LOAD_FILTERS') {
+      return Promise.resolve({ filters: filters })
+    }
+  })
+
+  // TODO: ugly hack to detect page change
+  let currentUrl = window.location.href
+  setInterval(function() {
+    if (currentUrl != window.location.href) {
+      currentUrl = window.location.href
+      setTimeout(reloadFilters, 0)
+      setTimeout(reloadFilters, 500)
+      setTimeout(reloadFilters, 1000)
+    }
+  }, 500)
+
+  reloadFilters()
+}
+
+init()
