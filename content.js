@@ -130,6 +130,8 @@ const saveFilters = (filters) => {
 }
 
 function filterProducts(filters) {
+  const pagination = document.querySelector('.s-pagination-container').parentElement
+
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   products = Array.from(products)
 
@@ -160,6 +162,11 @@ function filterProducts(filters) {
 
   for (const product of products) {
     mainParent.appendChild(product)
+  }
+
+  // Sometimes pagination got accidentally removed
+  if (!document.body.contains(pagination)) {
+    mainParent.appendChild(pagination)
   }
 
   const extraProductSections = []
