@@ -27,12 +27,12 @@ const getFilters = (tags) => {
 }
 
 const sendMessageToCurrentTab = (type, payload = {}, callback = null) => {
-  console.log('SEND MESSAGE:', type, payload)
+  console.debug('SEND MESSAGE:', type, payload)
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs[0]
     if (tab) {
       chrome.tabs.sendMessage(tab.id, { type, payload }).then((response) => {
-        console.log('RECEIVE MESSAGE:', type, response)
+        console.debug('RECEIVE MESSAGE:', type, response)
         if (callback) {
           callback(response)
         }

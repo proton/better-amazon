@@ -108,7 +108,7 @@ const loadFilters = () => {
     const savedFilters = localStorage.getItem(key)
     if (!savedFilters) continue
 
-    console.log('savedFilters:', savedFilters)
+    console.debug('savedFilters:', savedFilters)
 
     try {
       filters = JSON.parse(savedFilters)
@@ -199,7 +199,7 @@ const init = _ => {
 
   chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
     const { type, payload } = message
-    console.log('CLIENT RECEIVE MESSAGE:', type, payload)
+    console.debug('CLIENT RECEIVE MESSAGE:', type, payload)
     if (type === 'APPLY_FILTERS') {
       saveFilters(filters)
       filterProducts(payload)
