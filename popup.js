@@ -42,12 +42,15 @@ const sendMessageToCurrentTab = (type, payload = {}, callback = null) => {
 }
 
 const loadFilters = (state) => {
-  const filterTags = state.filters || {}
+  if (state.initialized) {
+    return
+  }
+
   sendMessageToCurrentTab('LOAD_FILTERS', null, (response) => {
     const filters = response.filters || {}
     Object.entries(filters).forEach(([key, value]) => {
-      if (filterTags[key]) {
-        filterTags[key].value = value
+      if (state.filterTags[key]) {
+        state.filterTags[key].value = value
       }
     })
 
@@ -57,25 +60,27 @@ const loadFilters = (state) => {
 }
 
 const filterProducts = (state) => {
-  if (!state.initialized) return
-  sendMessageToCurrentTab('APPLY_FILTERS', state.filters)
+  if (!state.initialized) {
+    return
+  }
+  
+  sendMessageToCurrentTab('APPLY_FILTERS', getFilters(state.filterTags))
 }
 
 const init = _ => {
   const state = {
     initialized: false,
-    filters: {}
+    filterTags:  {},
   }
 
-  const filterTags = state.filters
   for (const field of filtersFields) {
-    filterTags[field.name] = document.getElementById(field.name)
+    state.filterTags[field.name] = document.getElementById(field.name)
   }
 
   loadFilters(state)
 
-  for (const key in filterTags) {
-    filterTags[key].addEventListener('change', _ => filterProducts(state))
+  for (const key in state.filterTags) {
+    state.filterTags[key].addEventListener('change', _ => filterProducts(state))
   }
 
   // TODO: ugly hack to detect page change
