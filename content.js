@@ -129,6 +129,37 @@ const saveFilters = (filters) => {
   }
 }
 
+const filterByMinimumReviewsCount = (product, filters) => 
+  product.reviewsCount >= filters.minimumReviewsCount
+
+const filterByNegativeWords = (product, filters) => 
+  filters.negativeWords.filter(word => product.title.includes(word)).length === 0
+
+const filterByPositiveWords = (product, filters) => 
+  filters.positiveWords.every(word => product.title.includes(word))
+
+const filterByMaxPrice = (product, filters) => 
+  filters.minPrice == 0 || product.price !== null && product.price <= filters.maxPrice
+
+const filterByMinPrice = (product, filters) => 
+  filters.minPrice == 0 || product.price !== null && product.price >= filters.minPrice
+
+const filterByFreeDelivery = (product, filters) => 
+  filters.freeDelivery === false || product.allText.includes('free delivery')
+
+const filterBySponsoredAndFeatured = (product, filters) =>
+  filters.removeSponsoredAndFeatured === false || product.isSponsored
+
+const FILTER_METHODS = [
+  ['minimumReviewsCount',        filterByMinimumReviewsCount],
+  ['negativeWords',              filterByNegativeWords],
+  ['positiveWords',              filterByPositiveWords],
+  ['maxPrice',                   filterByMaxPrice],
+  ['minPrice',                   filterByMinPrice],
+  ['freeDelivery',               filterByFreeDelivery],
+  ['removeSponsoredAndFeatured', filterBySponsoredAndFeatured],
+]
+
 function filterProducts(filters) {
   const pagination = document.querySelector('.s-pagination-container').parentElement
 
@@ -137,14 +168,7 @@ function filterProducts(filters) {
 
   for (const product of products) {
     const data = productData(product)
-    const show =
-      (data.reviewsCount >= filters.minimumReviewsCount) &&
-      (filters.negativeWords.filter(word => data.title.includes(word)).length === 0) &&
-      filters.positiveWords.every(word => data.title.includes(word)) &&
-      (filters.minPrice == 0 || data.price !== null && data.price >= filters.minPrice) &&
-      (filters.maxPrice == 0 || data.price !== null && data.price <= filters.maxPrice) &&
-      (!filters.freeDelivery || data.allText.includes('free delivery')) &&
-      !(filters.removeSponsoredAndFeatured && data.isSponsored)
+    const show = FILTER_METHODS.every(([key, method]) => !Object.hasOwn(filters, key) || method(data, filters))
     elementToggle(product, show)
   }
 
