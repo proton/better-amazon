@@ -81,6 +81,7 @@ const init = _ => {
 
   for (const key in state.filterTags) {
     state.filterTags[key].addEventListener('change', _ => filterProducts(state))
+    state.filterTags[key].addEventListener('input',  _ => filterProducts(state))
   }
 
   // TODO: ugly hack to detect page change
