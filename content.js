@@ -225,8 +225,9 @@ const init = _ => {
     const { type, payload } = message
     console.debug('CLIENT RECEIVE MESSAGE:', type, payload)
     if (type === 'APPLY_FILTERS') {
+      filters = payload
       saveFilters(filters)
-      filterProducts(payload)
+      filterProducts(filters)
     } else if (type === 'LOAD_FILTERS') {
       return Promise.resolve({ filters: filters })
     }
