@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Better Amazon Filters</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 16px; min-width: 320px; }
+    .field { margin-bottom: 12px; }
+    label { font-weight: bold; display: block; margin-bottom: 4px; }
+    textarea, input[type="number"], input[type="text"] { width: 100%; }
+    .actions { margin-top: 16px; text-align: right; }
+    button { padding: 6px 16px; }
+  </style>
+</head>
+<body>
+  <form id="filtersForm">
+    <div class="field">
+      <label for="minimumReviewsCount">Minimal reviews count</label>
+      <input type="number" id="minimumReviewsCount" name="minimumReviewsCount" min="0" value="0">
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="freeDelivery" name="freeDelivery"> Free delivery</label>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="removeSponsoredAndFeatured" name="removeSponsoredAndFeatured"> Remove sponsored and featured</label>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="sortByUnitPrice" name="sortByUnitPrice"> Sort by unit price</label>
+    </div>
+    <div class="field">
+      <label for="negativeWords">Words should NOT be in the title:</label>
+      <textarea id="negativeWords" name="negativeWords" rows="2"></textarea>
+    </div>
+    <div class="field">
+      <label for="positiveWords">Words should BE present in the title:</label>
+      <textarea id="positiveWords" name="positiveWords" rows="2"></textarea>
+    </div>
+    <div class="field">
+      <label for="minPrice">Min price</label>
+      <input type="number" id="minPrice" name="minPrice" min="0" value="0">
+    </div>
+    <div class="field">
+      <label for="maxPrice">Max price</label>
+      <input type="number" id="maxPrice" name="maxPrice" min="0" value="0">
+    </div>
+    <!-- <div class="actions">
+      <button type="submit">Apply Filters</button>
+    </div> -->
+  </form>
+</body>
+<script src="popup.js"></script>
+</html>
