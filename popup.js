@@ -87,36 +87,6 @@ const setIcon = (isGrayed) => {
   })
 }
 
-// const init = _ => {
-//   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-//     const tab = tabs[0]
-//     // const url = tab && tab.url
-//     // const allowed = url && isAllowedAmazonUrl(url)
-//     const form = document.getElementById('filtersForm')
-//     const notAllowedMessage = document.getElementById('not-allowed-message')
-
-//     // if (allowed) {
-//       form.style.display = ''
-//       notAllowedMessage.style.display = 'none'
-//       const state = {
-//         initialized: false,
-//         filterTags:  {},
-//       };
-//       for (const field of filtersFields) {
-//         state.filterTags[field.name] = document.getElementById(field.name)
-//       }
-//       loadFilters(state)
-//       for (const key in state.filterTags) {
-//         state.filterTags[key].addEventListener('change', _ => filterProducts(state))
-//         state.filterTags[key].addEventListener('input',  _ => filterProducts(state))
-//       }
-//     } else {
-//       form.style.display = 'none'
-//       msg.style.display = ''
-//       setGrayedIcon()
-//     }
-//   })
-
 const init = _ => {
   setIcon(true)
 

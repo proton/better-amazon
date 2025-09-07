@@ -161,7 +161,7 @@ const FILTER_METHODS = [
 ]
 
 function filterProducts(filters) {
-  const pagination = document.querySelector('.s-pagination-container').parentElement
+  const pagination = document.querySelector('.s-pagination-container')?.parentElement
 
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   products = Array.from(products)
@@ -189,7 +189,7 @@ function filterProducts(filters) {
   }
 
   // Sometimes pagination got accidentally removed
-  if (!document.body.contains(pagination)) {
+  if (pagination && !document.body.contains(pagination)) {
     mainParent.appendChild(pagination)
   }
 
