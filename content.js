@@ -81,7 +81,6 @@ const LOCATION_REGEXPS = [
   /&node=(\d+)/,
   /rh=n%3A(\d+)/,
   /k=([a-zA-Z\-\+_\d]+)/,
-  /ref=([a-zA-Z\-_\d]+)/,
 ]
 
 const findPageIds = _ => {
@@ -96,6 +95,7 @@ const findPageIds = _ => {
 const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
 const customFiltersKeys = _ => {
   const ids = findPageIds()
+  console.log('keys', ids.map(id => FILTERS_KEY + '-' + id))
   return ids.map(id => FILTERS_KEY + '-' + id)
 }
 
