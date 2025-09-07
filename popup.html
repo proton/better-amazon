@@ -13,7 +13,10 @@
   </style>
 </head>
 <body>
-  <form id="filtersForm">
+  <div id="not-allowed-message" style="color: #888; text-align: center; margin-top: 40px;">
+    <p>This extension only works on Amazon product/search pages.</p>
+  </div>
+  <form id="filtersForm" style="display:none;">
     <div class="field">
       <label for="minimumReviewsCount">Minimal reviews count</label>
       <input type="number" id="minimumReviewsCount" name="minimumReviewsCount" min="0" value="0">
@@ -43,9 +46,6 @@
       <label for="maxPrice">Max price</label>
       <input type="number" id="maxPrice" name="maxPrice" min="0" value="0">
     </div>
-    <!-- <div class="actions">
-      <button type="submit">Apply Filters</button>
-    </div> -->
   </form>
 </body>
 <script src="popup.js"></script>
