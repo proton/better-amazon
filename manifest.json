@@ -20,11 +20,7 @@
     "gecko": {
       "id": "{80225003-6f08-4de1-8454-c09855aa95fd}",
       "data_collection_permissions": {
-<<<<<<< HEAD
         "required": ["none"]
-=======
-        "collects_no_data": true
->>>>>>> 86237d1deb60c2935654ac5a9f65d1f40750b442
       }
     }
   },
