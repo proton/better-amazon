@@ -1,13 +1,28 @@
-const filtersFields = [
-  { name: 'minimumReviewsCount',        value: (tag) => +tag.value },
-  { name: 'freeDelivery',               value: (tag) => tag.checked },
-  { name: 'removeSponsoredAndFeatured', value: (tag) => tag.checked },
-  { name: 'sortByUnitPrice',            value: (tag) => tag.checked },
-  { name: 'negativeWords',              value: (tag) => wordsFromTextArea(tag) },
-  { name: 'positiveWords',              value: (tag) => wordsFromTextArea(tag) },
-  { name: 'minPrice',                   value: (tag) => +tag.value },
-  { name: 'maxPrice',                   value: (tag) => +tag.value },
-]
+const numberValue = {
+  get: (tag) => +tag.value,
+  set: (tag, val) => { tag.value = val }
+}
+
+const checkboxValue = {
+  get: (tag) => tag.checked,
+  set: (tag, val) => { tag.checked = val }
+}
+
+const textTagsValue = {
+  get: (tag) => wordsFromTextArea(tag),
+  set: (tag, val) => { tag.value = val.join(', ') }
+}
+
+const filtersFields = {
+  minimumReviewsCount:        numberValue,
+  freeDelivery:               checkboxValue,
+  removeSponsoredAndFeatured: checkboxValue,
+  sortByUnitPrice:            checkboxValue,
+  negativeWords:              textTagsValue,
+  positiveWords:              textTagsValue,
+  minPrice:                   numberValue,
+  maxPrice:                   numberValue,
+}
 
 const wordsFromTextArea = tag => {
   return tag.value.toLowerCase().
@@ -19,20 +34,18 @@ const wordsFromTextArea = tag => {
 const getFilters = (tags) => {
   const filters = {}
 
-  for (const field of filtersFields) {
-    filters[field.name] = field.value(tags[field.name])
+  for (const [name, { get }] of Object.entries(filtersFields)) {
+    filters[name] = get(tags[name])
   }
 
   return filters
 }
 
 const sendMessageToCurrentTab = (type, payload = {}, callback = null) => {
-  console.debug('SEND MESSAGE:', type, payload)
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs[0]
     if (tab) {
       chrome.tabs.sendMessage(tab.id, { type, payload }).then((response) => {
-        console.debug('RECEIVE MESSAGE:', type, response)
         if (callback) {
           callback(response)
         }
@@ -50,11 +63,9 @@ const loadFilters = (state) => {
     const filters = response.filters || {}
     Object.entries(filters).forEach(([key, value]) => {
       if (state.filterTags[key]) {
-        state.filterTags[key].value = value
+        filtersFields[key].set(state.filterTags[key], value)
       }
     })
-
-    state.initialized = true
 
     const form = document.getElementById('filtersForm')
     const notAllowedMessage = document.getElementById('not-allowed-message')
@@ -63,6 +74,7 @@ const loadFilters = (state) => {
     form.style.display = ''
     setIcon(false)
 
+    state.initialized = true
     filterProducts(state)
   })
 }
@@ -95,8 +107,8 @@ const init = _ => {
     filterTags:  {},
   }
 
-  for (const field of filtersFields) {
-    state.filterTags[field.name] = document.getElementById(field.name)
+  for (const name of Object.keys(filtersFields)) {
+    state.filterTags[name] = document.getElementById(name)
   }
 
   loadFilters(state)

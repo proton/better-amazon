@@ -95,35 +95,31 @@ const findPageIds = _ => {
 const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
 const customFiltersKeys = _ => {
   const ids = findPageIds()
-  console.log('keys', ids.map(id => FILTERS_KEY + '-' + id))
   return ids.map(id => FILTERS_KEY + '-' + id)
 }
 
 const loadFilters = () => {
   let filters = {}
   const keys = customFiltersKeys()
-  if (keys.length === 0) return
 
   for (const key of keys) {
     const savedFilters = localStorage.getItem(key)
     if (!savedFilters) continue
-
-    console.debug('savedFilters:', savedFilters)
 
     try {
       filters = JSON.parse(savedFilters)
       filterProducts(filters)
       return filters
     } catch (err) {
-      console.error('Failed to load filters:', err)
+      console.error('Failed to load filters:', key, err)
     }
   }
+  
   return filters
 }
 
 const saveFilters = (filters) => {
   const keys = customFiltersKeys()
-  if (keys.length === 0) return
   for (const key of keys) {
     localStorage.setItem(key, JSON.stringify(filters))
   }
@@ -214,22 +210,24 @@ function filterProducts(filters) {
 }
 
 const init = _ => {
-  let filters = {}
+  const state = {
+    filters: {},
+  }
 
   const reloadFilters = _ => {
-    filters = loadFilters()
-    filterProducts(filters)
+    state.filters = loadFilters()
+    filterProducts(state.filters)
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
     const { type, payload } = message
-    console.debug('CLIENT RECEIVE MESSAGE:', type, payload)
+    
     if (type === 'APPLY_FILTERS') {
-      filters = payload
-      saveFilters(filters)
-      filterProducts(filters)
+      state.filters = payload
+      saveFilters(state.filters)
+      filterProducts(state.filters)
     } else if (type === 'LOAD_FILTERS') {
-      return Promise.resolve({ filters: filters })
+      return Promise.resolve({ filters: state.filters })
     }
   })
 
