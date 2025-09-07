@@ -72,7 +72,6 @@ const loadFilters = (state) => {
 
     notAllowedMessage.style.display = 'none'
     form.style.display = ''
-    setIcon(false)
 
     state.initialized = true
     filterProducts(state)
@@ -87,21 +86,7 @@ const filterProducts = (state) => {
   sendMessageToCurrentTab('APPLY_FILTERS', getFilters(state.filterTags))
 }
 
-const setIcon = (isGrayed) => {
-  const iconSizes = [48, 128, 512]
-  const colorSuffix = isGrayed ? 'grey-' : ''
-
-  chrome.action.setIcon({
-    path: iconSizes.reduce((acc, size) => {
-      acc[size] = `images/icon-${colorSuffix}${size}.png`
-      return acc
-    }, {})
-  })
-}
-
 const init = _ => {
-  setIcon(true)
-
   const state = {
     initialized: false,
     filterTags:  {},
