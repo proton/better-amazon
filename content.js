@@ -113,20 +113,25 @@ const productData = product => {
   }
 }
 
-const LOCATION_REGEXPS = [
-  /&crid=([A-Z0-9]+)/,
-  /&node=(\d+)/,
-  /rh=n%3A(\d+)/,
-  /k=([a-zA-Z\-\+_\d]+)/,
-]
+const FILTER_PAGE_PARAM_KEYS = ['crid', 'node', 'k']
 
 const findPageIds = _ => {
-  const url = window.location.href
-  return LOCATION_REGEXPS.
-    map(regex => url.match(regex)).
-    filter(m => m).
-    map(m => m[1]).
-    filter(str => str)
+  try {
+    const url = new URL(window.location.href)
+    const ids = FILTER_PAGE_PARAM_KEYS.
+      map(key => url.searchParams.get(key)).
+      filter(value => value)
+    const nodeMatch = url.searchParams.get('rh')?.match(/(?:^|,)n:(\d+)/)
+
+    if (nodeMatch) {
+      ids.push(nodeMatch[1])
+    }
+
+    return ids
+  } catch (err) {
+    console.debug(['Failed to parse location:', err, window.location.href])
+    return []
+  }
 }
 
 const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
