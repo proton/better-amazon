@@ -18,17 +18,22 @@ const getProductIndex = product => {
   return +product.getAttribute(PRODUCT_INDEX_ATTR)
 }
 
+const parseReviewCount = text => {
+  const match = text.replaceAll(',', '').match(/[\d\.]+[kK]?/)
+  if (!match) return 0
+
+  const count = +match[0].match(/[\d\.]+/)[0]
+  return match[0].endsWith('k') || match[0].endsWith('K') ? count * 1000 : count
+}
+
 const getReviewCount = product => {
   try {
     const el =
       product.querySelector('.alf-search-csa-instrumentation-wrapper[data-csa-c-slot-id="alf-reviews"]') ||
+      product.querySelector('[data-cy="reviews-block"] a[href*="#customerReviews"]') ||
       product.querySelector('.a-size-small a .a-size-base')
     if (!el) return 0
-    const text = el.innerText.replaceAll(',', '').match(/[\d\.]+[kK]?/)[0]
-    if (text.endsWith("k") || text.endsWith("K")) {
-      return +text.match(/[\d\.]+/)[0] * 1000
-    }
-    else return +text
+    return parseReviewCount(`${el.getAttribute?.('aria-label') || ''} ${el.innerText}`)
   }
   catch(err) {
     console.debug([err, product])
