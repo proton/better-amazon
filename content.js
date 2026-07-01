@@ -3,6 +3,23 @@ const elementToggle = (element, show) => {
 }
 
 const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
+const SELECTORS = {
+  searchResult: '.s-search-results [data-component-type="s-search-result"]',
+  pagination: '.s-pagination-container',
+  reviewCount: [
+    '.alf-search-csa-instrumentation-wrapper[data-csa-c-slot-id="alf-reviews"]',
+    '[data-cy="reviews-block"] a[href*="#customerReviews"]',
+    '.a-size-small a .a-size-base',
+  ],
+  price: '.a-price .a-offscreen',
+  sponsoredLabel: '.puis-sponsored-label-text',
+  title: 'h2',
+  unitPrice: '.a-size-base.a-color-secondary',
+}
+const FEATURED_SECTION_TITLE_IDS = [
+  'loom-desktop-bottom-slot_featuredasins-heading',
+  'loom-desktop-inline-slot_featuredasins-heading',
+]
 let nextProductIndex = 0
 
 const assignProductIndexes = products => {
@@ -28,10 +45,9 @@ const parseReviewCount = text => {
 
 const getReviewCount = product => {
   try {
-    const el =
-      product.querySelector('.alf-search-csa-instrumentation-wrapper[data-csa-c-slot-id="alf-reviews"]') ||
-      product.querySelector('[data-cy="reviews-block"] a[href*="#customerReviews"]') ||
-      product.querySelector('.a-size-small a .a-size-base')
+    const el = SELECTORS.reviewCount.
+      map(selector => product.querySelector(selector)).
+      find(element => element)
     if (!el) return 0
     return parseReviewCount(`${el.getAttribute?.('aria-label') || ''} ${el.innerText}`)
   }
@@ -42,12 +58,12 @@ const getReviewCount = product => {
 }
 
 const getTitle = product => {
-  return Array.from(product.querySelectorAll('h2')).map(elem => elem.innerText.toLowerCase()).join(' ')
+  return Array.from(product.querySelectorAll(SELECTORS.title)).map(elem => elem.innerText.toLowerCase()).join(' ')
 }
 
 const getPrice = product => {
   try {
-    const priceEl = product.querySelector('.a-price .a-offscreen')
+    const priceEl = product.querySelector(SELECTORS.price)
     if (!priceEl) return Infinity
     return +priceEl.innerText.replaceAll(',', '').match(/\d+\.\d+/)[0]
   }
@@ -58,8 +74,8 @@ const getPrice = product => {
 }
 
 const getUnitPrice = product => {
-  const priceEl = product.querySelector('.a-price .a-offscreen')
-  const unitPriceEl = priceEl && priceEl.parentElement.parentElement.querySelector('.a-size-base.a-color-secondary')
+  const priceEl = product.querySelector(SELECTORS.price)
+  const unitPriceEl = priceEl && priceEl.parentElement.parentElement.querySelector(SELECTORS.unitPrice)
   if (!unitPriceEl) return getPrice(product)
 
   try {
@@ -93,7 +109,7 @@ const productData = product => {
     title:        getTitle(product),
     price:        getPrice(product),
     allText:      product.innerText.toLowerCase(),
-    isSponsored:  !!product.querySelector('.puis-sponsored-label-text'),
+    isSponsored:  !!product.querySelector(SELECTORS.sponsoredLabel),
   }
 }
 
@@ -178,9 +194,9 @@ const FILTER_METHODS = [
 ]
 
 function filterProducts(filters) {
-  const pagination = document.querySelector('.s-pagination-container')?.parentElement
+  const pagination = document.querySelector(SELECTORS.pagination)?.parentElement
 
-  let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
+  let products = document.querySelectorAll(SELECTORS.searchResult)
   products = Array.from(products)
   assignProductIndexes(products)
 
@@ -214,11 +230,7 @@ function filterProducts(filters) {
   }
 
   const extraProductSections = []
-  const extraProductSectionTitleIds = [
-    'loom-desktop-bottom-slot_featuredasins-heading',
-    'loom-desktop-inline-slot_featuredasins-heading',
-  ]
-  for (const elementId of extraProductSectionTitleIds) {
+  for (const elementId of FEATURED_SECTION_TITLE_IDS) {
     try {
       const titleEl = document.getElementById(elementId)
       const parent = titleEl.closest('.s-widget-container')
