@@ -97,12 +97,12 @@ const createPriceElement = ({ unitPrice, priceText, hasUnitPriceWrapper }) => {
   return priceEl
 }
 
-const runContentScript = products => {
+const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle') => {
   const parent = new Parent(products)
   const sandbox = {
     console,
     URL,
-    window: { location: { href: 'https://www.amazon.com.au/s?k=candle' } },
+    window: { location: { href: url } },
     localStorage: {
       getItem: () => null,
       setItem: () => {},
@@ -133,7 +133,11 @@ const runContentScript = products => {
   vm.createContext(sandbox)
   vm.runInContext(fs.readFileSync('content.js', 'utf8'), sandbox)
 
-  return { parent, filterProducts: sandbox.filterProducts }
+  return {
+    evaluate: expression => vm.runInContext(expression, sandbox),
+    parent,
+    filterProducts: sandbox.filterProducts,
+  }
 }
 
 const auReviewElement = count => new Element({
@@ -212,9 +216,20 @@ const testPriceFallbackParsing = () => {
   assert.deepStrictEqual(parent.children.map(product => product.id), ['whole', 'decimal'])
 }
 
+const testCustomFilterKeys = () => {
+  const { evaluate } = runContentScript([], 'https://www.amazon.com/s?k=candle&crid=ABC123&rh=n%3A1055398')
+
+  assert.deepStrictEqual(Array.from(evaluate('customFiltersKeys()')), [
+    'CUSTOM_AMAZON_FILTERS_KEY-ABC123',
+    'CUSTOM_AMAZON_FILTERS_KEY-candle',
+    'CUSTOM_AMAZON_FILTERS_KEY-1055398',
+  ])
+}
+
 testMinimumReviewsCount()
 testSortByUnitPriceToggle()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
+testCustomFilterKeys()
 
 console.log('content script regression tests passed')
