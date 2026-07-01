@@ -255,6 +255,35 @@ function filterProducts(filters) {
   }
 }
 
+const watchLocationChanges = callback => {
+  let currentUrl = window.location.href
+  const handleLocationChange = _ => {
+    if (currentUrl === window.location.href) {
+      return
+    }
+
+    currentUrl = window.location.href
+    callback()
+  }
+  const wrapHistoryMethod = methodName => {
+    const originalMethod = window.history?.[methodName]
+    if (typeof originalMethod !== 'function') {
+      return
+    }
+
+    window.history[methodName] = function(...args) {
+      const result = originalMethod.apply(this, args)
+      setTimeout(handleLocationChange, 0)
+      return result
+    }
+  }
+
+  wrapHistoryMethod('pushState')
+  wrapHistoryMethod('replaceState')
+  window.addEventListener?.('popstate', handleLocationChange)
+  setInterval(handleLocationChange, 500)
+}
+
 const init = _ => {
   const state = {
     filters: {},
@@ -263,6 +292,12 @@ const init = _ => {
   const reloadFilters = _ => {
     state.filters = loadFilters()
     filterProducts(state.filters)
+  }
+
+  const reloadFiltersWithRetries = _ => {
+    setTimeout(reloadFilters, 0)
+    setTimeout(reloadFilters, 500)
+    setTimeout(reloadFilters, 1000)
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
@@ -277,17 +312,7 @@ const init = _ => {
     }
   })
 
-  // TODO: ugly hack to detect page change
-  let currentUrl = window.location.href
-  setInterval(function() {
-    if (currentUrl != window.location.href) {
-      currentUrl = window.location.href
-      setTimeout(reloadFilters, 0)
-      setTimeout(reloadFilters, 500)
-      setTimeout(reloadFilters, 1000)
-    }
-  }, 500)
-
+  watchLocationChanges(reloadFiltersWithRetries)
   reloadFilters()
 }
 
