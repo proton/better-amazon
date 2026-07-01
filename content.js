@@ -3,6 +3,8 @@ const elementToggle = (element, show) => {
 }
 
 const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
+// Amazon search result positions continue across pages: page 3 starts at 97
+// for a 48-result page, even when the visible card data-index restarts.
 const RESULTS_PER_PAGE = 48
 const SELECTORS = {
   searchResult: '.s-search-results [data-component-type="s-search-result"]',
@@ -80,6 +82,8 @@ const getResultPage = products => {
 }
 
 const getPaginationContainers = () => {
+  // Amazon can leave stale pagination widgets in the result grid after SPA
+  // navigation, so collect each whole pagination widget, not just the inner nav.
   return Array.from(document.querySelectorAll(SELECTORS.pagination)).
     map(container => container.closest(SELECTORS.paginationWidget) || container.parentElement).
     filter(container => container)
@@ -109,6 +113,8 @@ const isSearchPageReadyForFiltering = () => {
 
   const urlPage = getUrlPage()
   const resultPage = getResultPage(products)
+  // Prefer product positions over pagination state because the stale paginator
+  // is the failure mode: page-3 results can appear while page-1 pagination remains.
   if (resultPage !== null) return resultPage === urlPage
 
   const paginationPages = getPaginationContainers().map(getPaginationPage)
@@ -286,6 +292,8 @@ function filterProducts(filters) {
   if (!isSearchPageReadyForFiltering()) return false
 
   const urlPage = getUrlPage()
+  // Filtering below moves search result nodes around. Remove mismatched
+  // pagination widgets first so a stale page-1 control is not preserved.
   removeStalePaginationContainers(urlPage)
   const pagination = findPaginationContainer(urlPage)
 
@@ -397,6 +405,8 @@ const init = _ => {
 
   const reloadFiltersWithRetries = _ => {
     state.reloadAttempt = 0
+    // Give Amazon's SPA render a short head start; reloadFilters will keep
+    // retrying until result positions or pagination match the new URL page.
     scheduleReloadFilters(250)
   }
 
