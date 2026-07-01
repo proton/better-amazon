@@ -144,7 +144,7 @@ const filterByFreeDelivery = (product, filter) =>
   filter === false || product.allText.includes('free delivery')
 
 const filterBySponsoredAndFeatured = (product, filter) =>
-  filter === false || product.isSponsored
+  filter === false || !product.isSponsored
 
 const FILTER_METHODS = [
   ['minimumReviewsCount',        filterByMinimumReviewsCount],
@@ -205,7 +205,7 @@ function filterProducts(filters) {
   }
   
   for (const element of extraProductSections) {
-    elementToggle(element, filters.removeSponsoredAndFeatured)
+    elementToggle(element, !filters.removeSponsoredAndFeatured)
   }
 }
 
