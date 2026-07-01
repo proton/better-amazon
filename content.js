@@ -3,9 +3,16 @@ const elementToggle = (element, show) => {
 }
 
 const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
+// Amazon search result positions continue across pages: page 3 starts at 97
+// for a 48-result page, even when the visible card data-index restarts.
+const RESULTS_PER_PAGE = 48
 const SELECTORS = {
   searchResult: '.s-search-results [data-component-type="s-search-result"]',
   pagination: '.s-pagination-container',
+  paginationSelected: '.s-pagination-selected',
+  paginationWidget: '[cel_widget_id*="PAGINATION"], [data-cel-widget*="PAGINATION"]',
+  resultPosition: '[data-csa-c-pos]',
+  searchResultWidget: '[cel_widget_id*="MAIN-SEARCH_RESULTS-"]',
   reviewCount: [
     '.alf-search-csa-instrumentation-wrapper[data-csa-c-slot-id="alf-reviews"]',
     '[data-cy="reviews-block"] a[href*="#customerReviews"]',
@@ -22,6 +29,10 @@ const FEATURED_SECTION_TITLE_IDS = [
 ]
 let nextProductIndex = 0
 
+const getSearchProducts = () => {
+  return Array.from(document.querySelectorAll(SELECTORS.searchResult))
+}
+
 const assignProductIndexes = products => {
   for (const product of products) {
     if (!product.hasAttribute(PRODUCT_INDEX_ATTR)) {
@@ -33,6 +44,81 @@ const assignProductIndexes = products => {
 
 const getProductIndex = product => {
   return +product.getAttribute(PRODUCT_INDEX_ATTR)
+}
+
+const getUrlPage = () => {
+  try {
+    return +(new URL(window.location.href).searchParams.get('page') || 1)
+  } catch (_err) {
+    return 1
+  }
+}
+
+const getSelectedPaginationPage = (container = document) => {
+  const selectedPage = container.querySelector(SELECTORS.paginationSelected)
+  if (!selectedPage) return null
+
+  const page = +selectedPage.innerText.trim()
+  return Number.isFinite(page) ? page : null
+}
+
+const getResultPosition = product => {
+  const csaPosition = product.querySelector(SELECTORS.resultPosition)?.getAttribute('data-csa-c-pos')
+  if (csaPosition) {
+    const position = +csaPosition
+    if (Number.isFinite(position)) return position
+  }
+
+  const widgetId = product.querySelector(SELECTORS.searchResultWidget)?.getAttribute('cel_widget_id')
+  const match = widgetId?.match(/MAIN-SEARCH_RESULTS-(\d+)/)
+  return match ? +match[1] : null
+}
+
+const getResultPage = products => {
+  const positions = Array.from(products).map(getResultPosition).filter(position => position !== null)
+  if (positions.length === 0) return null
+
+  return Math.floor((Math.min(...positions) - 1) / RESULTS_PER_PAGE) + 1
+}
+
+const getPaginationContainers = () => {
+  // Amazon can leave stale pagination widgets in the result grid after SPA
+  // navigation, so collect each whole pagination widget, not just the inner nav.
+  return Array.from(document.querySelectorAll(SELECTORS.pagination)).
+    map(container => container.closest(SELECTORS.paginationWidget) || container.parentElement).
+    filter(container => container)
+}
+
+const getPaginationPage = container => {
+  return getSelectedPaginationPage(container)
+}
+
+const findPaginationContainer = page => {
+  const containers = getPaginationContainers()
+  return containers.find(container => getPaginationPage(container) === page) || containers[containers.length - 1] || null
+}
+
+const removeStalePaginationContainers = page => {
+  for (const container of getPaginationContainers()) {
+    const paginationPage = getPaginationPage(container)
+    if (paginationPage !== null && paginationPage !== page) {
+      container.remove()
+    }
+  }
+}
+
+const isSearchPageReadyForFiltering = () => {
+  const products = getSearchProducts()
+  if (products.length === 0) return false
+
+  const urlPage = getUrlPage()
+  const resultPage = getResultPage(products)
+  // Prefer product positions over pagination state because the stale paginator
+  // is the failure mode: page-3 results can appear while page-1 pagination remains.
+  if (resultPage !== null) return resultPage === urlPage
+
+  const paginationPages = getPaginationContainers().map(getPaginationPage)
+  return paginationPages.length === 0 || paginationPages.includes(urlPage)
 }
 
 const parseReviewCount = text => {
@@ -155,7 +241,6 @@ const loadFilters = () => {
 
     try {
       filters = JSON.parse(savedFilters)
-      filterProducts(filters)
       return filters
     } catch (err) {
       console.error('Failed to load filters:', key, err)
@@ -204,13 +289,18 @@ const FILTER_METHODS = [
 ]
 
 function filterProducts(filters) {
-  const pagination = document.querySelector(SELECTORS.pagination)?.parentElement
+  if (!isSearchPageReadyForFiltering()) return false
 
-  let products = document.querySelectorAll(SELECTORS.searchResult)
-  products = Array.from(products)
+  const urlPage = getUrlPage()
+  // Filtering below moves search result nodes around. Remove mismatched
+  // pagination widgets first so a stale page-1 control is not preserved.
+  removeStalePaginationContainers(urlPage)
+  const pagination = findPaginationContainer(urlPage)
+
+  let products = getSearchProducts()
   assignProductIndexes(products)
   if (products.length === 0) {
-    return
+    return false
   }
 
   for (const product of products) {
@@ -256,6 +346,8 @@ function filterProducts(filters) {
   for (const element of extraProductSections) {
     elementToggle(element, !filters.removeSponsoredAndFeatured)
   }
+
+  return true
 }
 
 const watchLocationChanges = callback => {
@@ -290,17 +382,32 @@ const watchLocationChanges = callback => {
 const init = _ => {
   const state = {
     filters: {},
+    reloadAttempt: 0,
+  }
+
+  const scheduleReloadFilters = (delay = 0) => {
+    setTimeout(reloadFilters, delay)
   }
 
   const reloadFilters = _ => {
     state.filters = loadFilters()
-    filterProducts(state.filters)
+
+    if (filterProducts(state.filters)) {
+      state.reloadAttempt = 0
+      return
+    }
+
+    state.reloadAttempt += 1
+    if (state.reloadAttempt <= 20) {
+      scheduleReloadFilters(250)
+    }
   }
 
   const reloadFiltersWithRetries = _ => {
-    setTimeout(reloadFilters, 0)
-    setTimeout(reloadFilters, 500)
-    setTimeout(reloadFilters, 1000)
+    state.reloadAttempt = 0
+    // Give Amazon's SPA render a short head start; reloadFilters will keep
+    // retrying until result positions or pagination match the new URL page.
+    scheduleReloadFilters(250)
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
@@ -309,7 +416,10 @@ const init = _ => {
     if (type === 'APPLY_FILTERS') {
       state.filters = payload
       saveFilters(state.filters)
-      filterProducts(state.filters)
+      if (!filterProducts(state.filters)) {
+        state.reloadAttempt = 0
+        scheduleReloadFilters(250)
+      }
     } else if (type === 'LOAD_FILTERS') {
       return Promise.resolve({ filters: state.filters })
     }
