@@ -226,10 +226,17 @@ const testCustomFilterKeys = () => {
   ])
 }
 
+const testEmptySearchResults = () => {
+  const { filterProducts } = runContentScript([])
+
+  assert.doesNotThrow(() => filterProducts({ sortByUnitPrice: true }))
+}
+
 testMinimumReviewsCount()
 testSortByUnitPriceToggle()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
 testCustomFilterKeys()
+testEmptySearchResults()
 
 console.log('content script regression tests passed')

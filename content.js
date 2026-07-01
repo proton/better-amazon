@@ -209,6 +209,9 @@ function filterProducts(filters) {
   let products = document.querySelectorAll(SELECTORS.searchResult)
   products = Array.from(products)
   assignProductIndexes(products)
+  if (products.length === 0) {
+    return
+  }
 
   for (const product of products) {
     const data = productData(product)
