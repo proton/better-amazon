@@ -90,7 +90,7 @@ const getUnitPrice = product => {
 }
 
 const sortBy = (products, method, desc) => {
-  return products.sort((a, b) => {
+  return [...products].sort((a, b) => {
     const va = method(a)
     const vb = method(b)
 
