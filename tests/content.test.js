@@ -3,11 +3,13 @@ const fs = require('fs')
 const vm = require('vm')
 
 class Element {
-  constructor({ innerText = '', attributes = {}, querySelectors = {} } = {}) {
+  constructor({ innerText = '', attributes = {}, querySelectors = {}, closestElement = null } = {}) {
     this.innerText = innerText
     this.attributes = attributes
     this.querySelectors = querySelectors
+    this.closestElement = closestElement
     this.parentElement = null
+    this.removed = false
   }
 
   getAttribute(name) {
@@ -17,15 +19,27 @@ class Element {
   querySelector(selector) {
     return this.querySelectors[selector] || null
   }
+
+  closest() {
+    return this.closestElement
+  }
+
+  remove() {
+    this.removed = true
+    if (this.parentElement?.children) {
+      this.parentElement.children = this.parentElement.children.filter(child => child !== this)
+    }
+  }
 }
 
 class Product {
-  constructor(id, { price = null, priceText = null, reviewElements = {}, hasUnitPriceWrapper = true } = {}) {
+  constructor(id, { price = null, priceText = null, reviewElements = {}, hasUnitPriceWrapper = true, resultPosition = null } = {}) {
     this.id = id
     this.attributes = {}
     this.style = {}
     this.innerText = `${id} free delivery`
     this.reviewElements = reviewElements
+    this.resultPosition = resultPosition
     this.priceEl = price === null && priceText === null ? null : createPriceElement({
       unitPrice: price,
       priceText,
@@ -49,6 +63,9 @@ class Product {
   querySelector(selector) {
     if (selector === '.a-price .a-offscreen') return this.priceEl
     if (selector === '.puis-sponsored-label-text') return null
+    if (selector === '[data-csa-c-pos]' && this.resultPosition !== null) {
+      return new Element({ attributes: { 'data-csa-c-pos': String(this.resultPosition) } })
+    }
     return this.reviewElements[selector] || null
   }
 
@@ -97,7 +114,20 @@ const createPriceElement = ({ unitPrice, priceText, hasUnitPriceWrapper }) => {
   return priceEl
 }
 
-const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle') => {
+const createPaginationContainer = page => {
+  const widget = new Element()
+  const selected = new Element({ innerText: String(page) })
+  const container = new Element({
+    querySelectors: { '.s-pagination-selected': selected },
+    closestElement: widget,
+  })
+  widget.querySelectors['.s-pagination-selected'] = selected
+  container.parentElement = widget
+
+  return { container, widget }
+}
+
+const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle', { paginationContainers = [] } = {}) => {
   const parent = new Parent(products)
   const sandbox = {
     console,
@@ -108,12 +138,15 @@ const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle'
       setItem: () => {},
     },
     document: {
-      body: { contains: () => true },
+      body: { contains: element => !element.removed },
       getElementById: () => null,
       querySelector: () => null,
       querySelectorAll: selector => {
         if (selector === '.s-search-results [data-component-type="s-search-result"]') {
           return parent.children
+        }
+        if (selector === '.s-pagination-container') {
+          return paginationContainers.filter(container => !container.removed && !container.closestElement?.removed)
         }
 
         return []
@@ -232,11 +265,47 @@ const testEmptySearchResults = () => {
   assert.doesNotThrow(() => filterProducts({ sortByUnitPrice: true }))
 }
 
+const testRemovesStalePagination = () => {
+  const stalePagination = createPaginationContainer(1)
+  const currentPagination = createPaginationContainer(3)
+  const products = [
+    new Product('page-3-first', { resultPosition: 97 }),
+    new Product('page-3-second', { resultPosition: 98 }),
+  ]
+  const { filterProducts } = runContentScript(
+    products,
+    'https://www.amazon.com/s?k=candle&page=3',
+    { paginationContainers: [stalePagination.container, currentPagination.container] },
+  )
+
+  assert.strictEqual(filterProducts({}), true)
+  assert.strictEqual(stalePagination.widget.removed, true)
+  assert.strictEqual(currentPagination.widget.removed, false)
+}
+
+const testDefersFilteringUntilResultsMatchUrlPage = () => {
+  const stalePagination = createPaginationContainer(1)
+  const products = [
+    new Product('page-1-first', { resultPosition: 1 }),
+    new Product('page-1-second', { resultPosition: 2 }),
+  ]
+  const { filterProducts } = runContentScript(
+    products,
+    'https://www.amazon.com/s?k=candle&page=3',
+    { paginationContainers: [stalePagination.container] },
+  )
+
+  assert.strictEqual(filterProducts({}), false)
+  assert.strictEqual(stalePagination.widget.removed, false)
+}
+
 testMinimumReviewsCount()
 testSortByUnitPriceToggle()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
 testCustomFilterKeys()
 testEmptySearchResults()
+testRemovesStalePagination()
+testDefersFilteringUntilResultsMatchUrlPage()
 
 console.log('content script regression tests passed')
