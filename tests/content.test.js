@@ -20,13 +20,17 @@ class Element {
 }
 
 class Product {
-  constructor(id, { price = null, reviewElements = {}, hasUnitPriceWrapper = true } = {}) {
+  constructor(id, { price = null, priceText = null, reviewElements = {}, hasUnitPriceWrapper = true } = {}) {
     this.id = id
     this.attributes = {}
     this.style = {}
     this.innerText = `${id} free delivery`
     this.reviewElements = reviewElements
-    this.priceEl = price === null ? null : createPriceElement(price, hasUnitPriceWrapper)
+    this.priceEl = price === null && priceText === null ? null : createPriceElement({
+      unitPrice: price,
+      priceText,
+      hasUnitPriceWrapper,
+    })
     this.parentElement = null
   }
 
@@ -75,13 +79,13 @@ class Parent {
   }
 }
 
-const createPriceElement = (unitPrice, hasUnitPriceWrapper) => {
+const createPriceElement = ({ unitPrice, priceText, hasUnitPriceWrapper }) => {
   const unitPriceEl = new Element({ innerText: `($${unitPrice.toFixed(2)}/oz)` })
   const unitPriceParent = new Element({
     querySelectors: { '.a-size-base.a-color-secondary': unitPriceEl },
   })
   const priceWrapper = new Element()
-  const priceEl = new Element({ innerText: '$10.00' })
+  const priceEl = new Element({ innerText: priceText || '$10.00' })
 
   if (!hasUnitPriceWrapper) {
     return priceEl
@@ -190,8 +194,27 @@ const testSortByUnitPriceWithoutWrapper = () => {
   assert.deepStrictEqual(parent.children.map(product => product.id), ['wrapped', 'plain'])
 }
 
+const testPriceFallbackParsing = () => {
+  const wholeDollars = new Product('whole', {
+    price: 100,
+    priceText: '$71',
+    hasUnitPriceWrapper: false,
+  })
+  const decimalWithThousands = new Product('decimal', {
+    price: 100,
+    priceText: '$1,234.56',
+    hasUnitPriceWrapper: false,
+  })
+  const { parent, filterProducts } = runContentScript([decimalWithThousands, wholeDollars])
+
+  filterProducts({ sortByUnitPrice: true })
+
+  assert.deepStrictEqual(parent.children.map(product => product.id), ['whole', 'decimal'])
+}
+
 testMinimumReviewsCount()
 testSortByUnitPriceToggle()
 testSortByUnitPriceWithoutWrapper()
+testPriceFallbackParsing()
 
 console.log('content script regression tests passed')

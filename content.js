@@ -43,6 +43,11 @@ const parseReviewCount = text => {
   return match[0].endsWith('k') || match[0].endsWith('K') ? count * 1000 : count
 }
 
+const parsePrice = text => {
+  const match = text.replaceAll(',', '').match(/\d+(?:\.\d+)?/)
+  return match ? +match[0] : Infinity
+}
+
 const getReviewCount = product => {
   try {
     const el = SELECTORS.reviewCount.
@@ -65,7 +70,7 @@ const getPrice = product => {
   try {
     const priceEl = product.querySelector(SELECTORS.price)
     if (!priceEl) return Infinity
-    return +priceEl.innerText.replaceAll(',', '').match(/\d+\.\d+/)[0]
+    return parsePrice(priceEl.innerText)
   }
   catch(err) {
     console.debug([err, product])
