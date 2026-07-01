@@ -1,3 +1,11 @@
 #!/bin/sh
 
-zip -r -FS better-amazon.zip * --exclude '*.git*' --exclude '*.zip' --exclude '*/.DS_Store' --exclude 'screenshots/*' --exclude '*.sh' .
+zip -r -FS better-amazon.zip \
+  manifest.json \
+  background.js \
+  content.js \
+  popup.html \
+  popup.js \
+  README.md \
+  images \
+  --exclude '*/.DS_Store'
