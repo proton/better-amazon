@@ -20,13 +20,13 @@ class Element {
 }
 
 class Product {
-  constructor(id, { price = null, reviewElements = {} } = {}) {
+  constructor(id, { price = null, reviewElements = {}, hasUnitPriceWrapper = true } = {}) {
     this.id = id
     this.attributes = {}
     this.style = {}
     this.innerText = `${id} free delivery`
     this.reviewElements = reviewElements
-    this.priceEl = price === null ? null : createPriceElement(price)
+    this.priceEl = price === null ? null : createPriceElement(price, hasUnitPriceWrapper)
     this.parentElement = null
   }
 
@@ -75,13 +75,17 @@ class Parent {
   }
 }
 
-const createPriceElement = unitPrice => {
+const createPriceElement = (unitPrice, hasUnitPriceWrapper) => {
   const unitPriceEl = new Element({ innerText: `($${unitPrice.toFixed(2)}/oz)` })
   const unitPriceParent = new Element({
     querySelectors: { '.a-size-base.a-color-secondary': unitPriceEl },
   })
   const priceWrapper = new Element()
   const priceEl = new Element({ innerText: '$10.00' })
+
+  if (!hasUnitPriceWrapper) {
+    return priceEl
+  }
 
   priceEl.parentElement = priceWrapper
   priceWrapper.parentElement = unitPriceParent
@@ -176,7 +180,18 @@ const testSortByUnitPriceToggle = () => {
   assert.deepStrictEqual(parent.children.map(product => product.id), ['first', 'second', 'third'])
 }
 
+const testSortByUnitPriceWithoutWrapper = () => {
+  const wrapped = new Product('wrapped', { price: 1 })
+  const plain = new Product('plain', { price: 2, hasUnitPriceWrapper: false })
+  const { parent, filterProducts } = runContentScript([plain, wrapped])
+
+  filterProducts({ sortByUnitPrice: true })
+
+  assert.deepStrictEqual(parent.children.map(product => product.id), ['wrapped', 'plain'])
+}
+
 testMinimumReviewsCount()
 testSortByUnitPriceToggle()
+testSortByUnitPriceWithoutWrapper()
 
 console.log('content script regression tests passed')

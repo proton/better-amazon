@@ -75,7 +75,7 @@ const getPrice = product => {
 
 const getUnitPrice = product => {
   const priceEl = product.querySelector(SELECTORS.price)
-  const unitPriceEl = priceEl && priceEl.parentElement.parentElement.querySelector(SELECTORS.unitPrice)
+  const unitPriceEl = priceEl?.parentElement?.parentElement?.querySelector(SELECTORS.unitPrice)
   if (!unitPriceEl) return getPrice(product)
 
   try {
