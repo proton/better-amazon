@@ -2,6 +2,22 @@ const elementToggle = (element, show) => {
   element.style.display = show ? 'block' : 'none'
 }
 
+const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
+let nextProductIndex = 0
+
+const assignProductIndexes = products => {
+  for (const product of products) {
+    if (!product.hasAttribute(PRODUCT_INDEX_ATTR)) {
+      product.setAttribute(PRODUCT_INDEX_ATTR, nextProductIndex)
+      nextProductIndex += 1
+    }
+  }
+}
+
+const getProductIndex = product => {
+  return +product.getAttribute(PRODUCT_INDEX_ATTR)
+}
+
 const getReviewCount = product => {
   try {
     const el =
@@ -161,6 +177,7 @@ function filterProducts(filters) {
 
   let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
   products = Array.from(products)
+  assignProductIndexes(products)
 
   for (const product of products) {
     const data = productData(product)
@@ -178,6 +195,8 @@ function filterProducts(filters) {
 
   if (filters.sortByUnitPrice) {
     products = sortBy(products, getUnitPrice)
+  } else {
+    products = sortBy(products, getProductIndex)
   }
 
   for (const product of products) {
