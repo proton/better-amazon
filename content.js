@@ -3,6 +3,23 @@ const elementToggle = (element, show) => {
 }
 
 const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
+const SELECTORS = {
+  searchResult: '.s-search-results [data-component-type="s-search-result"]',
+  pagination: '.s-pagination-container',
+  reviewCount: [
+    '.alf-search-csa-instrumentation-wrapper[data-csa-c-slot-id="alf-reviews"]',
+    '[data-cy="reviews-block"] a[href*="#customerReviews"]',
+    '.a-size-small a .a-size-base',
+  ],
+  price: '.a-price .a-offscreen',
+  sponsoredLabel: '.puis-sponsored-label-text',
+  title: 'h2',
+  unitPrice: '.a-size-base.a-color-secondary',
+}
+const FEATURED_SECTION_TITLE_IDS = [
+  'loom-desktop-bottom-slot_featuredasins-heading',
+  'loom-desktop-inline-slot_featuredasins-heading',
+]
 let nextProductIndex = 0
 
 const assignProductIndexes = products => {
@@ -26,12 +43,16 @@ const parseReviewCount = text => {
   return match[0].endsWith('k') || match[0].endsWith('K') ? count * 1000 : count
 }
 
+const parsePrice = text => {
+  const match = text.replaceAll(',', '').match(/\d+(?:\.\d+)?/)
+  return match ? +match[0] : Infinity
+}
+
 const getReviewCount = product => {
   try {
-    const el =
-      product.querySelector('.alf-search-csa-instrumentation-wrapper[data-csa-c-slot-id="alf-reviews"]') ||
-      product.querySelector('[data-cy="reviews-block"] a[href*="#customerReviews"]') ||
-      product.querySelector('.a-size-small a .a-size-base')
+    const el = SELECTORS.reviewCount.
+      map(selector => product.querySelector(selector)).
+      find(element => element)
     if (!el) return 0
     return parseReviewCount(`${el.getAttribute?.('aria-label') || ''} ${el.innerText}`)
   }
@@ -42,14 +63,14 @@ const getReviewCount = product => {
 }
 
 const getTitle = product => {
-  return Array.from(product.querySelectorAll('h2')).map(elem => elem.innerText.toLowerCase()).join(' ')
+  return Array.from(product.querySelectorAll(SELECTORS.title)).map(elem => elem.innerText.toLowerCase()).join(' ')
 }
 
 const getPrice = product => {
   try {
-    const priceEl = product.querySelector('.a-price .a-offscreen')
+    const priceEl = product.querySelector(SELECTORS.price)
     if (!priceEl) return Infinity
-    return +priceEl.innerText.replaceAll(',', '').match(/\d+\.\d+/)[0]
+    return parsePrice(priceEl.innerText)
   }
   catch(err) {
     console.debug([err, product])
@@ -58,8 +79,8 @@ const getPrice = product => {
 }
 
 const getUnitPrice = product => {
-  const priceEl = product.querySelector('.a-price .a-offscreen')
-  const unitPriceEl = priceEl && priceEl.parentElement.parentElement.querySelector('.a-size-base.a-color-secondary')
+  const priceEl = product.querySelector(SELECTORS.price)
+  const unitPriceEl = priceEl?.parentElement?.parentElement?.querySelector(SELECTORS.unitPrice)
   if (!unitPriceEl) return getPrice(product)
 
   try {
@@ -74,7 +95,7 @@ const getUnitPrice = product => {
 }
 
 const sortBy = (products, method, desc) => {
-  return products.sort((a, b) => {
+  return [...products].sort((a, b) => {
     const va = method(a)
     const vb = method(b)
 
@@ -93,24 +114,29 @@ const productData = product => {
     title:        getTitle(product),
     price:        getPrice(product),
     allText:      product.innerText.toLowerCase(),
-    isSponsored:  !!product.querySelector('.puis-sponsored-label-text'),
+    isSponsored:  !!product.querySelector(SELECTORS.sponsoredLabel),
   }
 }
 
-const LOCATION_REGEXPS = [
-  /&crid=([A-Z0-9]+)/,
-  /&node=(\d+)/,
-  /rh=n%3A(\d+)/,
-  /k=([a-zA-Z\-\+_\d]+)/,
-]
+const FILTER_PAGE_PARAM_KEYS = ['crid', 'node', 'k']
 
 const findPageIds = _ => {
-  const url = window.location.href
-  return LOCATION_REGEXPS.
-    map(regex => url.match(regex)).
-    filter(m => m).
-    map(m => m[1]).
-    filter(str => str)
+  try {
+    const url = new URL(window.location.href)
+    const ids = FILTER_PAGE_PARAM_KEYS.
+      map(key => url.searchParams.get(key)).
+      filter(value => value)
+    const nodeMatch = url.searchParams.get('rh')?.match(/(?:^|,)n:(\d+)/)
+
+    if (nodeMatch) {
+      ids.push(nodeMatch[1])
+    }
+
+    return ids
+  } catch (err) {
+    console.debug(['Failed to parse location:', err, window.location.href])
+    return []
+  }
 }
 
 const FILTERS_KEY = 'CUSTOM_AMAZON_FILTERS_KEY'
@@ -178,11 +204,14 @@ const FILTER_METHODS = [
 ]
 
 function filterProducts(filters) {
-  const pagination = document.querySelector('.s-pagination-container')?.parentElement
+  const pagination = document.querySelector(SELECTORS.pagination)?.parentElement
 
-  let products = document.querySelectorAll('.s-search-results [data-component-type="s-search-result"]')
+  let products = document.querySelectorAll(SELECTORS.searchResult)
   products = Array.from(products)
   assignProductIndexes(products)
+  if (products.length === 0) {
+    return
+  }
 
   for (const product of products) {
     const data = productData(product)
@@ -214,11 +243,7 @@ function filterProducts(filters) {
   }
 
   const extraProductSections = []
-  const extraProductSectionTitleIds = [
-    'loom-desktop-bottom-slot_featuredasins-heading',
-    'loom-desktop-inline-slot_featuredasins-heading',
-  ]
-  for (const elementId of extraProductSectionTitleIds) {
+  for (const elementId of FEATURED_SECTION_TITLE_IDS) {
     try {
       const titleEl = document.getElementById(elementId)
       const parent = titleEl.closest('.s-widget-container')
@@ -233,6 +258,35 @@ function filterProducts(filters) {
   }
 }
 
+const watchLocationChanges = callback => {
+  let currentUrl = window.location.href
+  const handleLocationChange = _ => {
+    if (currentUrl === window.location.href) {
+      return
+    }
+
+    currentUrl = window.location.href
+    callback()
+  }
+  const wrapHistoryMethod = methodName => {
+    const originalMethod = window.history?.[methodName]
+    if (typeof originalMethod !== 'function') {
+      return
+    }
+
+    window.history[methodName] = function(...args) {
+      const result = originalMethod.apply(this, args)
+      setTimeout(handleLocationChange, 0)
+      return result
+    }
+  }
+
+  wrapHistoryMethod('pushState')
+  wrapHistoryMethod('replaceState')
+  window.addEventListener?.('popstate', handleLocationChange)
+  setInterval(handleLocationChange, 500)
+}
+
 const init = _ => {
   const state = {
     filters: {},
@@ -241,6 +295,12 @@ const init = _ => {
   const reloadFilters = _ => {
     state.filters = loadFilters()
     filterProducts(state.filters)
+  }
+
+  const reloadFiltersWithRetries = _ => {
+    setTimeout(reloadFilters, 0)
+    setTimeout(reloadFilters, 500)
+    setTimeout(reloadFilters, 1000)
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
@@ -255,17 +315,7 @@ const init = _ => {
     }
   })
 
-  // TODO: ugly hack to detect page change
-  let currentUrl = window.location.href
-  setInterval(function() {
-    if (currentUrl != window.location.href) {
-      currentUrl = window.location.href
-      setTimeout(reloadFilters, 0)
-      setTimeout(reloadFilters, 500)
-      setTimeout(reloadFilters, 1000)
-    }
-  }, 500)
-
+  watchLocationChanges(reloadFiltersWithRetries)
   reloadFilters()
 }
 

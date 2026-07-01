@@ -9,3 +9,17 @@ Links: [Firefox](https://addons.mozilla.org/en-US/firefox/addon/better-amazon-ex
 - Allows to hide sponsored products
 - Makes price filter works
 - Makes sort by price work properly
+
+## Development
+
+Run syntax and build-script checks:
+
+```sh
+npm run check
+```
+
+Run all checks and regression tests:
+
+```sh
+npm test
+```

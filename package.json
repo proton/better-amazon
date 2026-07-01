@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "check": "node --check content.js && node --check popup.js && node --check background.js && sh -n build.sh",
+    "test": "npm run check && node tests/content.test.js"
+  }
+}
