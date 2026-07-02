@@ -30,6 +30,8 @@ const iconPath = payload => payload.path[48]
 vm.createContext(sandbox)
 vm.runInContext(fs.readFileSync('background.js', 'utf8'), sandbox)
 
+assert.strictEqual(iconPath(calls.at(-1)), 'images/icon-grey-48.png')
+
 onUpdated(1, {}, { url: 'https://www.amazon.com/s?k=candle' })
 assert.strictEqual(iconPath(calls.at(-1)), 'images/icon-48.png')
 

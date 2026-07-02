@@ -47,6 +47,8 @@ function updateIconForTab(tabId, url) {
   })
 }
 
+chrome.action.setIcon({ path: getIconsPath(true) })
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   updateIconForTab(tabId, tab?.url || changeInfo?.url)
 })
