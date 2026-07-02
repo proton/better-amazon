@@ -7,22 +7,52 @@ const getIconsPath = (isGrayed) => {
   }, {})
 }
 
+const AMAZON_HOSTS = [
+  'amazon.com',
+  'amazon.ca',
+  'amazon.cn',
+  'amazon.co.jp',
+  'amazon.co.uk',
+  'amazon.com.au',
+  'amazon.de',
+  'amazon.es',
+  'amazon.fr',
+  'amazon.in',
+  'amazon.it',
+  'amazon.nl',
+  'amazon.com.mx',
+  'amazon.sg',
+  'amazon.se',
+  'amazon.sa',
+  'amazon.ae',
+  'amazon.com.tr',
+  'amazon.com.br',
+]
+
+const isAmazonUrl = url => {
+  if (!url) return false
+
+  try {
+    const hostname = new URL(url).hostname
+    return AMAZON_HOSTS.some(host => hostname === host || hostname.endsWith(`.${host}`))
+  } catch (err) {
+    return false
+  }
+}
+
 function updateIconForTab(tabId, url) {
-  const isAmazon = url?.includes('amazon.')
   chrome.action.setIcon({
-    path: getIconsPath(!isAmazon),
+    path: getIconsPath(!isAmazonUrl(url)),
     tabId,
   })
 }
 
-chrome.tabs.onUpdated.addListener((tabId, _changeInfo, tab) => {
-  if (tab.url) {
-    updateIconForTab(tabId, tab?.url)
-  }
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  updateIconForTab(tabId, tab?.url || changeInfo?.url)
 })
 
 chrome.tabs.onActivated.addListener(activeInfo => {
   chrome.tabs.get(activeInfo.tabId, (tab) => {
-    updateIconForTab(tab.id, tab?.url)
+    updateIconForTab(activeInfo.tabId, tab?.url)
   })
 })
