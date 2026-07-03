@@ -297,6 +297,28 @@ const testSortByModernUnitPriceMarkup = () => {
   assert.deepStrictEqual(parent.children.map(product => product.id), ['old-markup', 'new-markup'])
 }
 
+const testSortByBaseUnitPriceBeforeFullPrice = () => {
+  const expensiveUnitPrice = new Product('12.40-per-count', {
+    price: 12.40,
+    priceText: '$24.79',
+    unitPriceText: '($12.40/count)',
+    unitPriceLayout: 'sibling',
+    unitPriceSelector: '.a-size-base.a-color-base',
+  })
+  const cheaperUnitPrice = new Product('4.66-per-count', {
+    price: 4.66,
+    priceText: '$27.96',
+    unitPriceText: '($4.66/count)',
+    unitPriceLayout: 'sibling',
+    unitPriceSelector: '.a-size-base.a-color-base',
+  })
+  const { parent, filterProducts } = runContentScript([expensiveUnitPrice, cheaperUnitPrice])
+
+  filterProducts({ sortByUnitPrice: true })
+
+  assert.deepStrictEqual(parent.children.map(product => product.id), ['4.66-per-count', '12.40-per-count'])
+}
+
 const testSortByUnitPriceNumberFormats = () => {
   const wholeUnit = new Product('whole-unit', {
     price: 5,
@@ -368,6 +390,7 @@ testSortByUnitPriceToggle()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
 testSortByModernUnitPriceMarkup()
+testSortByBaseUnitPriceBeforeFullPrice()
 testSortByUnitPriceNumberFormats()
 testCustomFilterKeys()
 testEmptySearchResults()

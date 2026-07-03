@@ -23,6 +23,7 @@ const SELECTORS = {
   title: 'h2',
   unitPrice: [
     '.a-size-base.a-color-secondary',
+    '.a-size-base.a-color-base',
     '.a-size-small.a-color-base',
   ],
 }
