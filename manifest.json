@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Better Amazon Experience",
-  "version": "1.6.1",
+  "version": "1.6.3",
   "description": "Filter Amazon products by negative words and price",
   "permissions": [],
   "icons": {
@@ -12,8 +12,8 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "48": "images/icon-48.png",
-      "128": "images/icon-128.png"
+      "48": "images/icon-grey-48.png",
+      "128": "images/icon-grey-128.png"
     }
   },
   "background": {
