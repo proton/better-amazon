@@ -20,6 +20,11 @@ class Element {
     return this.querySelectors[selector] || null
   }
 
+  querySelectorAll(selector) {
+    const element = this.querySelector(selector)
+    return element ? [element] : []
+  }
+
   closest() {
     return this.closestElement
   }
@@ -33,7 +38,19 @@ class Element {
 }
 
 class Product {
-  constructor(id, { price = null, priceText = null, reviewElements = {}, hasUnitPriceWrapper = true, resultPosition = null } = {}) {
+  constructor(
+    id,
+    {
+      price = null,
+      priceText = null,
+      reviewElements = {},
+      hasUnitPriceWrapper = true,
+      resultPosition = null,
+      unitPriceText = null,
+      unitPriceLayout = 'legacy',
+      unitPriceSelector = '.a-size-base.a-color-secondary',
+    } = {},
+  ) {
     this.id = id
     this.attributes = {}
     this.style = {}
@@ -44,6 +61,9 @@ class Product {
       unitPrice: price,
       priceText,
       hasUnitPriceWrapper,
+      unitPriceText,
+      unitPriceLayout,
+      unitPriceSelector,
     })
     this.parentElement = null
   }
@@ -96,15 +116,28 @@ class Parent {
   }
 }
 
-const createPriceElement = ({ unitPrice, priceText, hasUnitPriceWrapper }) => {
-  const unitPriceEl = new Element({ innerText: `($${unitPrice.toFixed(2)}/oz)` })
+const createPriceElement = ({ unitPrice, priceText, hasUnitPriceWrapper, unitPriceText, unitPriceLayout, unitPriceSelector }) => {
+  const unitPriceEl = new Element({ innerText: unitPriceText || `($${unitPrice.toFixed(2)}/oz)` })
   const unitPriceParent = new Element({
-    querySelectors: { '.a-size-base.a-color-secondary': unitPriceEl },
+    querySelectors: { [unitPriceSelector]: unitPriceEl },
   })
   const priceWrapper = new Element()
   const priceEl = new Element({ innerText: priceText || '$10.00' })
 
   if (!hasUnitPriceWrapper) {
+    return priceEl
+  }
+
+  if (unitPriceLayout === 'sibling') {
+    const priceNode = new Element()
+    const priceAnchor = new Element({
+      querySelectors: { [unitPriceSelector]: unitPriceEl },
+    })
+
+    priceEl.parentElement = priceNode
+    priceNode.parentElement = priceWrapper
+    priceWrapper.parentElement = priceAnchor
+
     return priceEl
   }
 
@@ -249,6 +282,37 @@ const testPriceFallbackParsing = () => {
   assert.deepStrictEqual(parent.children.map(product => product.id), ['whole', 'decimal'])
 }
 
+const testSortByModernUnitPriceMarkup = () => {
+  const oldMarkup = new Product('old-markup', { price: 3 })
+  const newMarkup = new Product('new-markup', {
+    price: 1,
+    unitPriceText: ' ($7.31 /  count)',
+    unitPriceLayout: 'sibling',
+    unitPriceSelector: '.a-size-small.a-color-base',
+  })
+  const { parent, filterProducts } = runContentScript([oldMarkup, newMarkup])
+
+  filterProducts({ sortByUnitPrice: true })
+
+  assert.deepStrictEqual(parent.children.map(product => product.id), ['old-markup', 'new-markup'])
+}
+
+const testSortByUnitPriceNumberFormats = () => {
+  const wholeUnit = new Product('whole-unit', {
+    price: 5,
+    unitPriceText: '($2 / count)',
+  })
+  const decimalComma = new Product('decimal-comma', {
+    price: 5,
+    unitPriceText: '(1,50 €/kg)',
+  })
+  const { parent, filterProducts } = runContentScript([wholeUnit, decimalComma])
+
+  filterProducts({ sortByUnitPrice: true })
+
+  assert.deepStrictEqual(parent.children.map(product => product.id), ['decimal-comma', 'whole-unit'])
+}
+
 const testCustomFilterKeys = () => {
   const { evaluate } = runContentScript([], 'https://www.amazon.com/s?k=candle&crid=ABC123&rh=n%3A1055398')
 
@@ -303,6 +367,8 @@ testMinimumReviewsCount()
 testSortByUnitPriceToggle()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
+testSortByModernUnitPriceMarkup()
+testSortByUnitPriceNumberFormats()
 testCustomFilterKeys()
 testEmptySearchResults()
 testRemovesStalePagination()
