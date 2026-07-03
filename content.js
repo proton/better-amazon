@@ -244,6 +244,18 @@ const sortBy = (products, method, desc) => {
   })
 }
 
+const sortByUnitPrice = products => {
+  return [...products].sort((a, b) => {
+    const unitPriceDiff = getUnitPrice(a) - getUnitPrice(b)
+    if (unitPriceDiff !== 0) return unitPriceDiff
+
+    const priceDiff = getPrice(a) - getPrice(b)
+    if (priceDiff !== 0) return priceDiff
+
+    return getProductIndex(a) - getProductIndex(b)
+  })
+}
+
 const productData = product => {
   return {
     reviewsCount: getReviewCount(product),
@@ -368,7 +380,7 @@ function filterProducts(filters) {
   }
 
   if (filters.sortByUnitPrice) {
-    products = sortBy(products, getUnitPrice)
+    products = sortByUnitPrice(products)
   } else {
     products = sortBy(products, getProductIndex)
   }
