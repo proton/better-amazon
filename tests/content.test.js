@@ -202,8 +202,8 @@ const testMinimumReviewsCount = () => {
   filterProducts({ minimumReviewsCount: 100 })
 
   const displays = Object.fromEntries(parent.children.map(product => [product.id, product.style.display]))
-  assert.strictEqual(displays.legacy, 'block')
-  assert.strictEqual(displays.au, 'block')
+  assert.strictEqual(displays.legacy, '')
+  assert.strictEqual(displays.au, '')
   assert.strictEqual(displays.low, 'none')
   assert.strictEqual(displays.missing, 'none')
 }

@@ -1,5 +1,5 @@
 const elementToggle = (element, show) => {
-  element.style.display = show ? 'block' : 'none'
+  element.style.display = show ? '' : 'none'
 }
 
 const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
