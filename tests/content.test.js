@@ -10,6 +10,19 @@ class Element {
     this.closestElement = closestElement
     this.parentElement = null
     this.removed = false
+    this.children = []
+    this.style = {}
+    this.classNames = []
+    this.classList = {
+      add: (...classNames) => {
+        for (const className of classNames) {
+          if (!this.classNames.includes(className)) {
+            this.classNames.push(className)
+          }
+        }
+      },
+      contains: className => this.classNames.includes(className),
+    }
   }
 
   getAttribute(name) {
@@ -29,6 +42,11 @@ class Element {
     if (this.parentElement?.children) {
       this.parentElement.children = this.parentElement.children.filter(child => child !== this)
     }
+  }
+
+  appendChild(child) {
+    this.children.push(child)
+    child.parentElement = this
   }
 }
 
@@ -140,6 +158,8 @@ const runContentScript = (
 ) => {
   const parent = productParents?.[0] || new Parent(products)
   const searchParents = productParents || [parent]
+  const head = new Element()
+  const searchResultsSlot = new Element()
   const sandbox = {
     console,
     URL,
@@ -150,8 +170,17 @@ const runContentScript = (
     },
     document: {
       body: { contains: element => !element.removed },
-      getElementById: () => null,
-      querySelector: () => null,
+      documentElement: new Element(),
+      head,
+      createElement: () => new Element(),
+      getElementById: id => head.children.find(child => child.id === id) || null,
+      querySelector: selector => {
+        if (selector === '.s-main-slot.s-search-results') {
+          return searchResultsSlot
+        }
+
+        return null
+      },
       querySelectorAll: selector => {
         if (selector === '.s-main-slot.s-search-results > [data-component-type="s-search-result"]') {
           return searchParents.flatMap(parent => parent.children)
@@ -179,7 +208,9 @@ const runContentScript = (
 
   return {
     evaluate: expression => vm.runInContext(expression, sandbox),
+    head,
     parent,
+    searchResultsSlot,
     productParents: searchParents,
     filterProducts: sandbox.filterProducts,
   }
@@ -218,6 +249,17 @@ const testMinimumReviewsCount = () => {
   assert.strictEqual(displays.au, '')
   assert.strictEqual(displays.low, 'none')
   assert.strictEqual(displays.missing, 'none')
+}
+
+const testAppliesGridLayoutOnce = () => {
+  const product = new Product('product')
+  const { filterProducts, head, searchResultsSlot } = runContentScript([product])
+
+  filterProducts({})
+  filterProducts({})
+
+  assert.strictEqual(searchResultsSlot.classList.contains('better-amazon-grid-results'), true)
+  assert.strictEqual(head.children.filter(child => child.id === 'better-amazon-grid-style').length, 1)
 }
 
 const testSortByUnitPriceToggle = () => {
@@ -331,6 +373,7 @@ const testDefersFilteringUntilResultsMatchUrlPage = () => {
 }
 
 testMinimumReviewsCount()
+testAppliesGridLayoutOnce()
 testSortByUnitPriceToggle()
 testKeepsProductParentsWhenOrderDoesNotChange()
 testSortByUnitPriceWithoutWrapper()

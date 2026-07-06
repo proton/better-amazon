@@ -2,11 +2,14 @@ const elementToggle = (element, show) => {
   element.style.display = show ? '' : 'none'
 }
 
+const GRID_STYLE_ID = 'better-amazon-grid-style'
+const GRID_CLASS = 'better-amazon-grid-results'
 const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
 // Amazon search result positions continue across pages: page 3 starts at 97
 // for a 48-result page, even when the visible card data-index restarts.
 const RESULTS_PER_PAGE = 48
 const SELECTORS = {
+  searchResultsSlot: '.s-main-slot.s-search-results',
   searchResult: '.s-main-slot.s-search-results > [data-component-type="s-search-result"]',
   pagination: '.s-pagination-container',
   paginationSelected: '.s-pagination-selected',
@@ -28,6 +31,94 @@ const FEATURED_SECTION_TITLE_IDS = [
   'loom-desktop-inline-slot_featuredasins-heading',
 ]
 let nextProductIndex = 0
+
+const RESULT_GRID_CSS = `
+.${GRID_CLASS}.s-main-slot.s-search-results {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results > :not([data-component-type="s-search-result"]) {
+  grid-column: 1 / -1 !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results > [data-component-type="s-search-result"] {
+  display: block !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results > [data-component-type="s-search-result"] > .sg-col-inner,
+.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="asin-faceout-container"] {
+  height: 100% !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="asin-faceout-container"] {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results .puis-card-container {
+  margin: 0 !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results .puisg-row {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results .puisg-row > .puisg-col {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  flex: none !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="image-container"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="image-container"] .s-image-fixed-height,
+.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="image-container"] .s-image-square-aspect {
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #f7f7f7 !important;
+}
+
+.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="image-container"] img.s-image {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+`
+
+const ensureGridStyles = () => {
+  if (document.getElementById(GRID_STYLE_ID)) return
+
+  const style = document.createElement('style')
+  style.id = GRID_STYLE_ID
+  style.textContent = RESULT_GRID_CSS
+  ;(document.head || document.documentElement).appendChild(style)
+}
+
+const applyGridLayout = () => {
+  ensureGridStyles()
+  document.querySelector(SELECTORS.searchResultsSlot)?.classList.add(GRID_CLASS)
+}
 
 const getSearchProducts = () => {
   return Array.from(document.querySelectorAll(SELECTORS.searchResult))
@@ -301,6 +392,8 @@ const FILTER_METHODS = [
 
 function filterProducts(filters) {
   if (!isSearchPageReadyForFiltering()) return false
+
+  applyGridLayout()
 
   const urlPage = getUrlPage()
   // Filtering below moves search result nodes around. Remove mismatched
