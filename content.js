@@ -37,9 +37,10 @@ const getSearchResultsSlot = () => document.querySelector(SELECTORS.searchResult
 const getProductListParent = products => products[0]?.parentElement || getSearchResultsSlot()
 
 const RESULT_GRID_CSS = `
+.s-main-slot.s-search-results.${GRID_CLASS},
 .${GRID_CLASS} {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr)) !important;
   gap: 16px !important;
   align-items: stretch !important;
 }
@@ -48,15 +49,18 @@ const RESULT_GRID_CSS = `
   grid-column: 1 / -1 !important;
 }
 
+.s-main-slot.s-search-results.${GRID_CLASS} > [data-component-type="s-search-result"],
 .${GRID_CLASS} > [data-component-type="s-search-result"] {
   display: block !important;
   grid-column: auto !important;
   width: auto !important;
   max-width: none !important;
   min-width: 0 !important;
+  flex-basis: auto !important;
   flex: none !important;
   margin: 0 !important;
   padding: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .${GRID_CLASS} > [data-component-type="s-search-result"] > .sg-col-inner,
