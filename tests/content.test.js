@@ -127,8 +127,13 @@ const createPaginationContainer = page => {
   return { container, widget }
 }
 
-const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle', { paginationContainers = [] } = {}) => {
-  const parent = new Parent(products)
+const runContentScript = (
+  products,
+  url = 'https://www.amazon.com.au/s?k=candle',
+  { paginationContainers = [], productParents = null } = {},
+) => {
+  const parent = productParents?.[0] || new Parent(products)
+  const searchParents = productParents || [parent]
   const sandbox = {
     console,
     URL,
@@ -143,7 +148,7 @@ const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle'
       querySelector: () => null,
       querySelectorAll: selector => {
         if (selector === '.s-search-results [data-component-type="s-search-result"]') {
-          return parent.children
+          return searchParents.flatMap(parent => parent.children)
         }
         if (selector === '.s-pagination-container') {
           return paginationContainers.filter(container => !container.removed && !container.closestElement?.removed)
@@ -169,6 +174,7 @@ const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle'
   return {
     evaluate: expression => vm.runInContext(expression, sandbox),
     parent,
+    productParents: searchParents,
     filterProducts: sandbox.filterProducts,
   }
 }
@@ -219,6 +225,23 @@ const testSortByUnitPriceToggle = () => {
 
   filterProducts({ sortByUnitPrice: false })
   assert.deepStrictEqual(parent.children.map(product => product.id), ['first', 'second', 'third'])
+}
+
+const testKeepsProductParentsWhenOrderDoesNotChange = () => {
+  const first = new Product('first')
+  const second = new Product('second')
+  const firstParent = new Parent([first])
+  const secondParent = new Parent([second])
+  const { filterProducts } = runContentScript(
+    [],
+    'https://www.amazon.com/s?k=type+c+to+type+a+adapter',
+    { productParents: [firstParent, secondParent] },
+  )
+
+  filterProducts({})
+
+  assert.deepStrictEqual(firstParent.children.map(product => product.id), ['first'])
+  assert.deepStrictEqual(secondParent.children.map(product => product.id), ['second'])
 }
 
 const testSortByUnitPriceWithoutWrapper = () => {
@@ -301,6 +324,7 @@ const testDefersFilteringUntilResultsMatchUrlPage = () => {
 
 testMinimumReviewsCount()
 testSortByUnitPriceToggle()
+testKeepsProductParentsWhenOrderDoesNotChange()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
 testCustomFilterKeys()

@@ -194,6 +194,10 @@ const sortBy = (products, method, desc) => {
   })
 }
 
+const hasOrderChanged = (products, sortedProducts) => {
+  return products.some((product, index) => product !== sortedProducts[index])
+}
+
 const productData = product => {
   return {
     reviewsCount: getReviewCount(product),
@@ -309,27 +313,27 @@ function filterProducts(filters) {
     elementToggle(product, show)
   }
 
-  // Sometimes elements are in different blocks
-  let parents = products.map(product => product.parentElement)
-  const mainParent = parents[0]
-  parents = [...new Set(parents)]
-  for (const parent of parents) {
-    parent.textContent = ''
-  }
+  const sortedProducts = filters.sortByUnitPrice
+    ? sortBy(products, getUnitPrice)
+    : sortBy(products, getProductIndex)
 
-  if (filters.sortByUnitPrice) {
-    products = sortBy(products, getUnitPrice)
-  } else {
-    products = sortBy(products, getProductIndex)
-  }
+  if (hasOrderChanged(products, sortedProducts)) {
+    // Sometimes elements are in different blocks
+    let parents = products.map(product => product.parentElement)
+    const mainParent = parents[0]
+    parents = [...new Set(parents)]
+    for (const parent of parents) {
+      parent.textContent = ''
+    }
 
-  for (const product of products) {
-    mainParent.appendChild(product)
-  }
+    for (const product of sortedProducts) {
+      mainParent.appendChild(product)
+    }
 
-  // Sometimes pagination got accidentally removed
-  if (pagination && !document.body.contains(pagination)) {
-    mainParent.appendChild(pagination)
+    // Sometimes pagination got accidentally removed
+    if (pagination && !document.body.contains(pagination)) {
+      mainParent.appendChild(pagination)
+    }
   }
 
   const extraProductSections = []
