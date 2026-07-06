@@ -7,7 +7,7 @@ const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
 // for a 48-result page, even when the visible card data-index restarts.
 const RESULTS_PER_PAGE = 48
 const SELECTORS = {
-  searchResult: '.s-search-results [data-component-type="s-search-result"]',
+  searchResult: '.s-main-slot.s-search-results > [data-component-type="s-search-result"]',
   pagination: '.s-pagination-container',
   paginationSelected: '.s-pagination-selected',
   paginationWidget: '[cel_widget_id*="PAGINATION"], [data-cel-widget*="PAGINATION"]',
@@ -91,11 +91,6 @@ const getPaginationContainers = () => {
 
 const getPaginationPage = container => {
   return getSelectedPaginationPage(container)
-}
-
-const findPaginationContainer = page => {
-  const containers = getPaginationContainers()
-  return containers.find(container => getPaginationPage(container) === page) || containers[containers.length - 1] || null
 }
 
 const removeStalePaginationContainers = page => {
@@ -196,6 +191,18 @@ const sortBy = (products, method, desc) => {
 
 const hasOrderChanged = (products, sortedProducts) => {
   return products.some((product, index) => product !== sortedProducts[index])
+}
+
+const reorderProducts = (products, sortedProducts) => {
+  const originalParents = new Map(products.map(product => [product, product.parentElement]))
+  const parents = [...new Set(originalParents.values())]
+
+  for (const parent of parents) {
+    const productsForParent = sortedProducts.filter(product => originalParents.get(product) === parent)
+    for (const product of productsForParent) {
+      parent.appendChild(product)
+    }
+  }
 }
 
 const productData = product => {
@@ -299,7 +306,6 @@ function filterProducts(filters) {
   // Filtering below moves search result nodes around. Remove mismatched
   // pagination widgets first so a stale page-1 control is not preserved.
   removeStalePaginationContainers(urlPage)
-  const pagination = findPaginationContainer(urlPage)
 
   let products = getSearchProducts()
   assignProductIndexes(products)
@@ -318,22 +324,7 @@ function filterProducts(filters) {
     : sortBy(products, getProductIndex)
 
   if (hasOrderChanged(products, sortedProducts)) {
-    // Sometimes elements are in different blocks
-    let parents = products.map(product => product.parentElement)
-    const mainParent = parents[0]
-    parents = [...new Set(parents)]
-    for (const parent of parents) {
-      parent.textContent = ''
-    }
-
-    for (const product of sortedProducts) {
-      mainParent.appendChild(product)
-    }
-
-    // Sometimes pagination got accidentally removed
-    if (pagination && !document.body.contains(pagination)) {
-      mainParent.appendChild(pagination)
-    }
+    reorderProducts(products, sortedProducts)
   }
 
   const extraProductSections = []

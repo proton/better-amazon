@@ -81,16 +81,22 @@ class Product {
 class Parent {
   constructor(children) {
     this.children = children
+    this.clearCount = 0
     for (const child of children) {
       child.parentElement = this
     }
   }
 
   set textContent(_value) {
+    this.clearCount += 1
     this.children = []
   }
 
   appendChild(child) {
+    if (child.parentElement?.children) {
+      child.parentElement.children = child.parentElement.children.filter(element => element !== child)
+    }
+
     this.children.push(child)
     child.parentElement = this
   }
@@ -147,7 +153,7 @@ const runContentScript = (
       getElementById: () => null,
       querySelector: () => null,
       querySelectorAll: selector => {
-        if (selector === '.s-search-results [data-component-type="s-search-result"]') {
+        if (selector === '.s-main-slot.s-search-results > [data-component-type="s-search-result"]') {
           return searchParents.flatMap(parent => parent.children)
         }
         if (selector === '.s-pagination-container') {
@@ -222,9 +228,11 @@ const testSortByUnitPriceToggle = () => {
 
   filterProducts({ sortByUnitPrice: true })
   assert.deepStrictEqual(parent.children.map(product => product.id), ['second', 'third', 'first'])
+  assert.strictEqual(parent.clearCount, 0)
 
   filterProducts({ sortByUnitPrice: false })
   assert.deepStrictEqual(parent.children.map(product => product.id), ['first', 'second', 'third'])
+  assert.strictEqual(parent.clearCount, 0)
 }
 
 const testKeepsProductParentsWhenOrderDoesNotChange = () => {
