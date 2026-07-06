@@ -2,6 +2,17 @@ const assert = require('assert')
 const fs = require('fs')
 const vm = require('vm')
 
+const createClassList = owner => ({
+  add: (...classNames) => {
+    for (const className of classNames) {
+      if (!owner.classNames.includes(className)) {
+        owner.classNames.push(className)
+      }
+    }
+  },
+  contains: className => owner.classNames.includes(className),
+})
+
 class Element {
   constructor({ innerText = '', attributes = {}, querySelectors = {}, closestElement = null } = {}) {
     this.innerText = innerText
@@ -13,16 +24,7 @@ class Element {
     this.children = []
     this.style = {}
     this.classNames = []
-    this.classList = {
-      add: (...classNames) => {
-        for (const className of classNames) {
-          if (!this.classNames.includes(className)) {
-            this.classNames.push(className)
-          }
-        }
-      },
-      contains: className => this.classNames.includes(className),
-    }
+    this.classList = createClassList(this)
   }
 
   getAttribute(name) {
@@ -100,6 +102,8 @@ class Parent {
   constructor(children) {
     this.children = children
     this.clearCount = 0
+    this.classNames = []
+    this.classList = createClassList(this)
     for (const child of children) {
       child.parentElement = this
     }
@@ -159,7 +163,7 @@ const runContentScript = (
   const parent = productParents?.[0] || new Parent(products)
   const searchParents = productParents || [parent]
   const head = new Element()
-  const searchResultsSlot = new Element()
+  const searchResultsSlot = parent
   const sandbox = {
     console,
     URL,
@@ -277,7 +281,7 @@ const testSortByUnitPriceToggle = () => {
   assert.strictEqual(parent.clearCount, 0)
 }
 
-const testKeepsProductParentsWhenOrderDoesNotChange = () => {
+const testMovesProductsIntoSearchSlotParent = () => {
   const first = new Product('first')
   const second = new Product('second')
   const firstParent = new Parent([first])
@@ -290,8 +294,10 @@ const testKeepsProductParentsWhenOrderDoesNotChange = () => {
 
   filterProducts({})
 
-  assert.deepStrictEqual(firstParent.children.map(product => product.id), ['first'])
-  assert.deepStrictEqual(secondParent.children.map(product => product.id), ['second'])
+  assert.deepStrictEqual(firstParent.children.map(product => product.id), ['first', 'second'])
+  assert.deepStrictEqual(secondParent.children.map(product => product.id), [])
+  assert.strictEqual(first.parentElement, firstParent)
+  assert.strictEqual(second.parentElement, firstParent)
 }
 
 const testSortByUnitPriceWithoutWrapper = () => {
@@ -375,7 +381,7 @@ const testDefersFilteringUntilResultsMatchUrlPage = () => {
 testMinimumReviewsCount()
 testAppliesGridLayoutOnce()
 testSortByUnitPriceToggle()
-testKeepsProductParentsWhenOrderDoesNotChange()
+testMovesProductsIntoSearchSlotParent()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
 testCustomFilterKeys()

@@ -32,6 +32,8 @@ const FEATURED_SECTION_TITLE_IDS = [
 ]
 let nextProductIndex = 0
 
+const getSearchResultsSlot = () => document.querySelector(SELECTORS.searchResultsSlot)
+
 const RESULT_GRID_CSS = `
 .${GRID_CLASS}.s-main-slot.s-search-results {
   display: grid !important;
@@ -117,7 +119,7 @@ const ensureGridStyles = () => {
 
 const applyGridLayout = () => {
   ensureGridStyles()
-  document.querySelector(SELECTORS.searchResultsSlot)?.classList.add(GRID_CLASS)
+  getSearchResultsSlot()?.classList.add(GRID_CLASS)
 }
 
 const getSearchProducts = () => {
@@ -280,19 +282,12 @@ const sortBy = (products, method, desc) => {
   })
 }
 
-const hasOrderChanged = (products, sortedProducts) => {
-  return products.some((product, index) => product !== sortedProducts[index])
-}
+const reorderProducts = sortedProducts => {
+  const parent = getSearchResultsSlot() || sortedProducts[0]?.parentElement
+  if (!parent) return
 
-const reorderProducts = (products, sortedProducts) => {
-  const originalParents = new Map(products.map(product => [product, product.parentElement]))
-  const parents = [...new Set(originalParents.values())]
-
-  for (const parent of parents) {
-    const productsForParent = sortedProducts.filter(product => originalParents.get(product) === parent)
-    for (const product of productsForParent) {
-      parent.appendChild(product)
-    }
+  for (const product of sortedProducts) {
+    parent.appendChild(product)
   }
 }
 
@@ -416,9 +411,7 @@ function filterProducts(filters) {
     ? sortBy(products, getUnitPrice)
     : sortBy(products, getProductIndex)
 
-  if (hasOrderChanged(products, sortedProducts)) {
-    reorderProducts(products, sortedProducts)
-  }
+  reorderProducts(sortedProducts)
 
   const extraProductSections = []
   for (const elementId of FEATURED_SECTION_TITLE_IDS) {
