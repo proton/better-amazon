@@ -10,7 +10,7 @@ const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
 const RESULTS_PER_PAGE = 48
 const SELECTORS = {
   searchResultsSlot: '.s-main-slot.s-search-results',
-  searchResult: '.s-main-slot.s-search-results > [data-component-type="s-search-result"]',
+  searchResult: '.s-search-results [data-component-type="s-search-result"]',
   pagination: '.s-pagination-container',
   paginationSelected: '.s-pagination-selected',
   paginationWidget: '[cel_widget_id*="PAGINATION"], [data-cel-widget*="PAGINATION"]',
@@ -34,19 +34,21 @@ let nextProductIndex = 0
 
 const getSearchResultsSlot = () => document.querySelector(SELECTORS.searchResultsSlot)
 
+const getProductListParent = products => products[0]?.parentElement || getSearchResultsSlot()
+
 const RESULT_GRID_CSS = `
-.${GRID_CLASS}.s-main-slot.s-search-results {
+.${GRID_CLASS} {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
   gap: 16px !important;
   align-items: stretch !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results > :not([data-component-type="s-search-result"]) {
+.${GRID_CLASS} > :not([data-component-type="s-search-result"]) {
   grid-column: 1 / -1 !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results > [data-component-type="s-search-result"] {
+.${GRID_CLASS} > [data-component-type="s-search-result"] {
   display: block !important;
   width: auto !important;
   max-width: none !important;
@@ -54,42 +56,42 @@ const RESULT_GRID_CSS = `
   padding: 0 !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results > [data-component-type="s-search-result"] > .sg-col-inner,
-.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="asin-faceout-container"] {
+.${GRID_CLASS} > [data-component-type="s-search-result"] > .sg-col-inner,
+.${GRID_CLASS} [data-cy="asin-faceout-container"] {
   height: 100% !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="asin-faceout-container"] {
+.${GRID_CLASS} [data-cy="asin-faceout-container"] {
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results .puis-card-container {
+.${GRID_CLASS} .puis-card-container {
   margin: 0 !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results .puisg-row {
+.${GRID_CLASS} .puisg-row {
   display: flex !important;
   flex-direction: column !important;
   height: 100% !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results .puisg-row > .puisg-col {
+.${GRID_CLASS} .puisg-row > .puisg-col {
   display: block !important;
   width: 100% !important;
   max-width: none !important;
   flex: none !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="image-container"] {
+.${GRID_CLASS} [data-cy="image-container"] {
   width: 100% !important;
   min-width: 0 !important;
   padding: 0 !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="image-container"] .s-image-fixed-height,
-.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="image-container"] .s-image-square-aspect {
+.${GRID_CLASS} [data-cy="image-container"] .s-image-fixed-height,
+.${GRID_CLASS} [data-cy="image-container"] .s-image-square-aspect {
   aspect-ratio: 1 / 1 !important;
   height: auto !important;
   max-height: none !important;
@@ -99,7 +101,7 @@ const RESULT_GRID_CSS = `
   background: #f7f7f7 !important;
 }
 
-.${GRID_CLASS}.s-main-slot.s-search-results [data-cy="image-container"] img.s-image {
+.${GRID_CLASS} [data-cy="image-container"] img.s-image {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
@@ -117,9 +119,9 @@ const ensureGridStyles = () => {
   ;(document.head || document.documentElement).appendChild(style)
 }
 
-const applyGridLayout = () => {
+const applyGridLayout = parent => {
   ensureGridStyles()
-  getSearchResultsSlot()?.classList.add(GRID_CLASS)
+  parent?.classList.add(GRID_CLASS)
 }
 
 const getSearchProducts = () => {
@@ -282,13 +284,32 @@ const sortBy = (products, method, desc) => {
   })
 }
 
-const reorderProducts = sortedProducts => {
-  const parent = getSearchResultsSlot() || sortedProducts[0]?.parentElement
+const reorderProducts = (products, sortedProducts) => {
+  const parent = getProductListParent(products)
   if (!parent) return
 
-  for (const product of sortedProducts) {
-    parent.appendChild(product)
+  const firstProductInParent = products.find(product => product.parentElement === parent)
+  const anchorReference = firstProductInParent || parent.firstChild
+  if (!anchorReference) {
+    for (const product of sortedProducts) {
+      parent.appendChild(product)
+    }
+    return
   }
+
+  const anchor = document.createComment('better-amazon-products-start')
+  parent.insertBefore(anchor, anchorReference)
+  let insertAfter = anchor
+
+  for (const product of sortedProducts) {
+    const reference = insertAfter.nextSibling
+    if (reference !== product) {
+      parent.insertBefore(product, reference)
+    }
+    insertAfter = product
+  }
+
+  anchor.remove()
 }
 
 const productData = product => {
@@ -388,8 +409,6 @@ const FILTER_METHODS = [
 function filterProducts(filters) {
   if (!isSearchPageReadyForFiltering()) return false
 
-  applyGridLayout()
-
   const urlPage = getUrlPage()
   // Filtering below moves search result nodes around. Remove mismatched
   // pagination widgets first so a stale page-1 control is not preserved.
@@ -401,6 +420,9 @@ function filterProducts(filters) {
     return false
   }
 
+  const productListParent = getProductListParent(products)
+  applyGridLayout(productListParent)
+
   for (const product of products) {
     const data = productData(product)
     const show = FILTER_METHODS.every(([key, method]) => !Object.hasOwn(filters, key) || method(data, filters[key]))
@@ -411,7 +433,7 @@ function filterProducts(filters) {
     ? sortBy(products, getUnitPrice)
     : sortBy(products, getProductIndex)
 
-  reorderProducts(sortedProducts)
+  reorderProducts(products, sortedProducts)
 
   const extraProductSections = []
   for (const elementId of FEATURED_SECTION_TITLE_IDS) {

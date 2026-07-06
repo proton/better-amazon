@@ -13,6 +13,32 @@ const createClassList = owner => ({
   contains: className => owner.classNames.includes(className),
 })
 
+const detachFromParent = child => {
+  if (child.parentElement?.children) {
+    child.parentElement.children = child.parentElement.children.filter(element => element !== child)
+  }
+}
+
+const insertChild = (parent, child, reference = null) => {
+  detachFromParent(child)
+
+  const referenceIndex = reference ? parent.children.indexOf(reference) : -1
+  if (referenceIndex === -1) {
+    parent.children.push(child)
+  } else {
+    parent.children.splice(referenceIndex, 0, child)
+  }
+  child.parentElement = parent
+}
+
+const getNextSibling = element => {
+  const siblings = element.parentElement?.children
+  if (!siblings) return null
+
+  const index = siblings.indexOf(element)
+  return index === -1 ? null : siblings[index + 1] || null
+}
+
 class Element {
   constructor({ innerText = '', attributes = {}, querySelectors = {}, closestElement = null } = {}) {
     this.innerText = innerText
@@ -39,16 +65,25 @@ class Element {
     return this.closestElement
   }
 
+  get firstChild() {
+    return this.children[0] || null
+  }
+
+  get nextSibling() {
+    return getNextSibling(this)
+  }
+
   remove() {
     this.removed = true
-    if (this.parentElement?.children) {
-      this.parentElement.children = this.parentElement.children.filter(child => child !== this)
-    }
+    detachFromParent(this)
   }
 
   appendChild(child) {
-    this.children.push(child)
-    child.parentElement = this
+    insertChild(this, child)
+  }
+
+  insertBefore(child, reference) {
+    insertChild(this, child, reference)
   }
 }
 
@@ -78,6 +113,10 @@ class Product {
 
   getAttribute(name) {
     return this.attributes[name]
+  }
+
+  get nextSibling() {
+    return getNextSibling(this)
   }
 
   querySelector(selector) {
@@ -114,13 +153,16 @@ class Parent {
     this.children = []
   }
 
-  appendChild(child) {
-    if (child.parentElement?.children) {
-      child.parentElement.children = child.parentElement.children.filter(element => element !== child)
-    }
+  get firstChild() {
+    return this.children[0] || null
+  }
 
-    this.children.push(child)
-    child.parentElement = this
+  appendChild(child) {
+    insertChild(this, child)
+  }
+
+  insertBefore(child, reference) {
+    insertChild(this, child, reference)
   }
 }
 
@@ -177,6 +219,7 @@ const runContentScript = (
       documentElement: new Element(),
       head,
       createElement: () => new Element(),
+      createComment: () => new Element(),
       getElementById: id => head.children.find(child => child.id === id) || null,
       querySelector: selector => {
         if (selector === '.s-main-slot.s-search-results') {
@@ -186,8 +229,8 @@ const runContentScript = (
         return null
       },
       querySelectorAll: selector => {
-        if (selector === '.s-main-slot.s-search-results > [data-component-type="s-search-result"]') {
-          return searchParents.flatMap(parent => parent.children)
+        if (selector === '.s-search-results [data-component-type="s-search-result"]') {
+          return searchParents.flatMap(parent => parent.children).filter(child => child instanceof Product)
         }
         if (selector === '.s-pagination-container') {
           return paginationContainers.filter(container => !container.removed && !container.closestElement?.removed)
@@ -300,6 +343,26 @@ const testMovesProductsIntoSearchSlotParent = () => {
   assert.strictEqual(second.parentElement, firstParent)
 }
 
+const testKeepsProductListAtOriginalPosition = () => {
+  const header = new Element()
+  header.id = 'header'
+  const footer = new Element()
+  footer.id = 'footer'
+  const first = new Product('first', { price: 2 })
+  const second = new Product('second', { price: 1 })
+  const parent = new Parent([header, first, second, footer])
+  const { filterProducts } = runContentScript(
+    [],
+    'https://www.amazon.com/s?k=type+c+to+type+a+adapter',
+    { productParents: [parent] },
+  )
+
+  filterProducts({ sortByUnitPrice: true })
+
+  assert.deepStrictEqual(parent.children.map(child => child.id), ['header', 'second', 'first', 'footer'])
+  assert.strictEqual(parent.clearCount, 0)
+}
+
 const testSortByUnitPriceWithoutWrapper = () => {
   const wrapped = new Product('wrapped', { price: 1 })
   const plain = new Product('plain', { price: 2, hasUnitPriceWrapper: false })
@@ -382,6 +445,7 @@ testMinimumReviewsCount()
 testAppliesGridLayoutOnce()
 testSortByUnitPriceToggle()
 testMovesProductsIntoSearchSlotParent()
+testKeepsProductListAtOriginalPosition()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
 testCustomFilterKeys()
