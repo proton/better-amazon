@@ -307,6 +307,7 @@ const testAppliesGridLayoutOnce = () => {
 
   assert.strictEqual(searchResultsSlot.classList.contains('better-amazon-grid-results'), true)
   assert.strictEqual(head.children.filter(child => child.id === 'better-amazon-grid-style').length, 1)
+  assert.strictEqual(head.children[0].textContent.includes('grid-column: auto !important'), true)
 }
 
 const testSortByUnitPriceToggle = () => {

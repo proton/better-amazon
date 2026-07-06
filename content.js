@@ -50,8 +50,11 @@ const RESULT_GRID_CSS = `
 
 .${GRID_CLASS} > [data-component-type="s-search-result"] {
   display: block !important;
+  grid-column: auto !important;
   width: auto !important;
   max-width: none !important;
+  min-width: 0 !important;
+  flex: none !important;
   margin: 0 !important;
   padding: 0 !important;
 }
