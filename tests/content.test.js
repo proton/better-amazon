@@ -307,7 +307,7 @@ const testAppliesGridLayoutOnce = () => {
 
   assert.strictEqual(searchResultsSlot.classList.contains('better-amazon-grid-results'), true)
   assert.strictEqual(head.children.filter(child => child.id === 'better-amazon-grid-style').length, 1)
-  assert.strictEqual(head.children[0].textContent.includes('minmax(300px, 1fr)'), true)
+  assert.strictEqual(head.children[0].textContent.includes('minmax(240px, 1fr)'), true)
   assert.strictEqual(head.children[0].textContent.includes('gap: 8px !important'), true)
   assert.strictEqual(head.children[0].textContent.includes('grid-column: auto !important'), true)
   assert.strictEqual(head.children[0].textContent.includes('flex-basis: auto !important'), true)
@@ -328,9 +328,9 @@ const testGridMatchesAmazonResponsiveColumnCounts = () => {
   const gap = +css.match(/gap: (\d+)px !important/)[1]
   const columnCount = width => Math.floor((width + gap) / (minimumWidth + gap))
 
-  assert.strictEqual(columnCount(1090), 3)
-  assert.strictEqual(columnCount(1330), 4)
-  assert.strictEqual(columnCount(1532), 5)
+  assert.strictEqual(columnCount(820), 3)
+  assert.strictEqual(columnCount(1000), 4)
+  assert.strictEqual(columnCount(1240), 5)
 }
 
 const testSortByUnitPriceToggle = () => {
