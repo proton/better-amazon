@@ -24,7 +24,11 @@ const SELECTORS = {
   price: '.a-price .a-offscreen',
   sponsoredLabel: '.puis-sponsored-label-text',
   title: 'h2',
-  unitPrice: '.a-size-base.a-color-secondary',
+  unitPrice: [
+    '.a-size-base.a-color-secondary',
+    '.a-size-base.a-color-base',
+    '.a-size-small.a-color-base',
+  ],
 }
 const FEATURED_SECTION_TITLE_IDS = [
   'loom-desktop-bottom-slot_featuredasins-heading',
@@ -231,6 +235,32 @@ const parsePrice = text => {
   return match ? +match[0] : Infinity
 }
 
+const parseLocaleNumber = text => {
+  const value = `${text}`.trim()
+  const hasComma = value.includes(',')
+  const hasDot = value.includes('.')
+  let normalized = value
+
+  if (hasComma && hasDot) {
+    normalized = value.lastIndexOf(',') > value.lastIndexOf('.')
+      ? value.replaceAll('.', '').replace(',', '.')
+      : value.replaceAll(',', '')
+  } else if (hasComma) {
+    const parts = value.split(',')
+    normalized = parts[parts.length - 1].length === 3
+      ? value.replaceAll(',', '')
+      : value.replace(',', '.')
+  }
+
+  const number = +normalized
+  return Number.isFinite(number) ? number : null
+}
+
+const parseUnitPrice = text => {
+  const match = `${text}`.match(/(\d[\d\.,]*)[^\d\/]*\//)
+  return match ? parseLocaleNumber(match[1]) : null
+}
+
 const getReviewCount = product => {
   try {
     const el = SELECTORS.reviewCount.
@@ -261,15 +291,35 @@ const getPrice = product => {
   }
 }
 
-const getUnitPrice = product => {
-  const priceEl = product.querySelector(SELECTORS.price)
-  const unitPriceEl = priceEl?.parentElement?.parentElement?.querySelector(SELECTORS.unitPrice)
-  if (!unitPriceEl) return getPrice(product)
+const getSelectorElements = (container, selector) => {
+  if (!container) return []
 
+  if (typeof container.querySelectorAll === 'function') {
+    const elements = Array.from(container.querySelectorAll(selector))
+    if (elements.length > 0) return elements
+  }
+
+  const element = container.querySelector?.(selector)
+  return element ? [element] : []
+}
+
+const getUnitPrice = product => {
   try {
-    const text  = unitPriceEl.innerText
-    const match = text.match(/\(.*?(\d+[\.,]+\d+)\//) || text.match(/\.*?(\d+[\.,]+\d+)/)
-    return +match[1]
+    const priceEl = product.querySelector(SELECTORS.price)
+    const priceContainer = priceEl?.parentElement?.parentElement
+    const containers = [priceContainer, priceContainer?.parentElement, product].
+      filter((container, index, all) => container && all.indexOf(container) === index)
+
+    for (const container of containers) {
+      for (const selector of SELECTORS.unitPrice) {
+        for (const element of getSelectorElements(container, selector)) {
+          const unitPrice = parseUnitPrice(element.innerText)
+          if (unitPrice !== null) return unitPrice
+        }
+      }
+    }
+
+    return getPrice(product)
   }
   catch(err) {
     console.debug([err, product])
@@ -317,6 +367,18 @@ const reorderProducts = (products, sortedProducts) => {
   }
 
   anchor.remove()
+}
+
+const sortByUnitPrice = products => {
+  return [...products].sort((a, b) => {
+    const unitPriceDiff = getUnitPrice(a) - getUnitPrice(b)
+    if (unitPriceDiff !== 0) return unitPriceDiff
+
+    const priceDiff = getPrice(a) - getPrice(b)
+    if (priceDiff !== 0) return priceDiff
+
+    return getProductIndex(a) - getProductIndex(b)
+  })
 }
 
 const productData = product => {
@@ -437,7 +499,7 @@ function filterProducts(filters) {
   }
 
   const sortedProducts = filters.sortByUnitPrice
-    ? sortBy(products, getUnitPrice)
+    ? sortByUnitPrice(products)
     : sortBy(products, getProductIndex)
 
   reorderProducts(products, sortedProducts)
