@@ -2,6 +2,43 @@ const assert = require('assert')
 const fs = require('fs')
 const vm = require('vm')
 
+const createClassList = owner => ({
+  add: (...classNames) => {
+    for (const className of classNames) {
+      if (!owner.classNames.includes(className)) {
+        owner.classNames.push(className)
+      }
+    }
+  },
+  contains: className => owner.classNames.includes(className),
+})
+
+const detachFromParent = child => {
+  if (child.parentElement?.children) {
+    child.parentElement.children = child.parentElement.children.filter(element => element !== child)
+  }
+}
+
+const insertChild = (parent, child, reference = null) => {
+  detachFromParent(child)
+
+  const referenceIndex = reference ? parent.children.indexOf(reference) : -1
+  if (referenceIndex === -1) {
+    parent.children.push(child)
+  } else {
+    parent.children.splice(referenceIndex, 0, child)
+  }
+  child.parentElement = parent
+}
+
+const getNextSibling = element => {
+  const siblings = element.parentElement?.children
+  if (!siblings) return null
+
+  const index = siblings.indexOf(element)
+  return index === -1 ? null : siblings[index + 1] || null
+}
+
 class Element {
   constructor({ innerText = '', attributes = {}, querySelectors = {}, closestElement = null } = {}) {
     this.innerText = innerText
@@ -10,6 +47,10 @@ class Element {
     this.closestElement = closestElement
     this.parentElement = null
     this.removed = false
+    this.children = []
+    this.style = {}
+    this.classNames = []
+    this.classList = createClassList(this)
   }
 
   getAttribute(name) {
@@ -29,11 +70,25 @@ class Element {
     return this.closestElement
   }
 
+  get firstChild() {
+    return this.children[0] || null
+  }
+
+  get nextSibling() {
+    return getNextSibling(this)
+  }
+
   remove() {
     this.removed = true
-    if (this.parentElement?.children) {
-      this.parentElement.children = this.parentElement.children.filter(child => child !== this)
-    }
+    detachFromParent(this)
+  }
+
+  appendChild(child) {
+    insertChild(this, child)
+  }
+
+  insertBefore(child, reference) {
+    insertChild(this, child, reference)
   }
 }
 
@@ -80,6 +135,10 @@ class Product {
     return this.attributes[name]
   }
 
+  get nextSibling() {
+    return getNextSibling(this)
+  }
+
   querySelector(selector) {
     if (selector === '.a-price .a-offscreen') return this.priceEl
     if (selector === '.puis-sponsored-label-text') return null
@@ -101,18 +160,29 @@ class Product {
 class Parent {
   constructor(children) {
     this.children = children
+    this.clearCount = 0
+    this.classNames = []
+    this.classList = createClassList(this)
     for (const child of children) {
       child.parentElement = this
     }
   }
 
   set textContent(_value) {
+    this.clearCount += 1
     this.children = []
   }
 
+  get firstChild() {
+    return this.children[0] || null
+  }
+
   appendChild(child) {
-    this.children.push(child)
-    child.parentElement = this
+    insertChild(this, child)
+  }
+
+  insertBefore(child, reference) {
+    insertChild(this, child, reference)
   }
 }
 
@@ -160,8 +230,17 @@ const createPaginationContainer = page => {
   return { container, widget }
 }
 
-const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle', { paginationContainers = [] } = {}) => {
-  const parent = new Parent(products)
+const runContentScript = (
+  products,
+  url = 'https://www.amazon.com.au/s?k=candle',
+  { paginationContainers = [], productParents = null } = {},
+) => {
+  const parent = productParents?.[0] || new Parent(products)
+  const searchParents = productParents || [parent]
+  const head = new Element()
+  const searchResultsSlot = parent
+  const runtimeMessages = []
+  let mutationCallback
   const sandbox = {
     console,
     URL,
@@ -172,11 +251,21 @@ const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle'
     },
     document: {
       body: { contains: element => !element.removed },
-      getElementById: () => null,
-      querySelector: () => null,
+      documentElement: new Element(),
+      head,
+      createElement: () => new Element(),
+      createComment: () => new Element(),
+      getElementById: id => head.children.find(child => child.id === id) || null,
+      querySelector: selector => {
+        if (selector === '.s-main-slot.s-search-results') {
+          return searchResultsSlot
+        }
+
+        return null
+      },
       querySelectorAll: selector => {
         if (selector === '.s-search-results [data-component-type="s-search-result"]') {
-          return parent.children
+          return searchParents.flatMap(parent => parent.children).filter(child => child instanceof Product)
         }
         if (selector === '.s-pagination-container') {
           return paginationContainers.filter(container => !container.removed && !container.closestElement?.removed)
@@ -187,10 +276,18 @@ const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle'
     },
     chrome: {
       runtime: {
+        sendMessage: message => runtimeMessages.push(message),
         onMessage: {
           addListener: () => {},
         },
       },
+    },
+    MutationObserver: class {
+      constructor(callback) {
+        mutationCallback = callback
+      }
+
+      observe() {}
     },
     setInterval: () => {},
     setTimeout: callback => callback(),
@@ -201,7 +298,14 @@ const runContentScript = (products, url = 'https://www.amazon.com.au/s?k=candle'
 
   return {
     evaluate: expression => vm.runInContext(expression, sandbox),
+    head,
     parent,
+    searchResultsSlot,
+    productParents: searchParents,
+    runtimeMessages,
+    notifySearchResultsChanged: addedNodes => mutationCallback([
+      { addedNodes, target: null },
+    ]),
     filterProducts: sandbox.filterProducts,
   }
 }
@@ -235,10 +339,50 @@ const testMinimumReviewsCount = () => {
   filterProducts({ minimumReviewsCount: 100 })
 
   const displays = Object.fromEntries(parent.children.map(product => [product.id, product.style.display]))
-  assert.strictEqual(displays.legacy, 'block')
-  assert.strictEqual(displays.au, 'block')
+  assert.strictEqual(displays.legacy, '')
+  assert.strictEqual(displays.au, '')
   assert.strictEqual(displays.low, 'none')
   assert.strictEqual(displays.missing, 'none')
+}
+
+const testAppliesGridLayoutOnce = () => {
+  const product = new Product('product')
+  const { filterProducts, head, runtimeMessages, searchResultsSlot } = runContentScript([product])
+
+  filterProducts({})
+  filterProducts({})
+
+  assert.strictEqual(searchResultsSlot.classList.contains('better-amazon-grid-results'), true)
+  assert.strictEqual(runtimeMessages[0].type, 'AMAZON_PAGE_READY')
+  assert.strictEqual(head.children.filter(child => child.id === 'better-amazon-grid-style').length, 1)
+  assert.strictEqual(head.children[0].textContent.includes('minmax(240px, 1fr)'), true)
+  assert.strictEqual(head.children[0].textContent.includes('gap: 8px !important'), true)
+  assert.strictEqual(head.children[0].textContent.includes('grid-column: auto !important'), true)
+  assert.strictEqual(head.children[0].textContent.includes('flex-basis: auto !important'), true)
+  const innerColumnRule = head.children[0].textContent.
+    split('.better-amazon-grid-results .puisg-row > .puisg-col {')[1].
+    split('}')[0]
+  assert.strictEqual(innerColumnRule.includes('min-width: 0 !important'), true)
+  const productRule = head.children[0].textContent.
+    split('.better-amazon-grid-results > [data-component-type="s-search-result"] {')[1].
+    split('}')[0]
+  assert.strictEqual(productRule.includes('display: block !important'), false)
+}
+
+const testGridMatchesAmazonResponsiveColumnCounts = () => {
+  const product = new Product('product')
+  const { filterProducts, head } = runContentScript([product])
+
+  filterProducts({})
+
+  const css = head.children[0].textContent
+  const minimumWidth = +css.match(/minmax\((\d+)px, 1fr\)/)[1]
+  const gap = +css.match(/gap: (\d+)px !important/)[1]
+  const columnCount = width => Math.floor((width + gap) / (minimumWidth + gap))
+
+  assert.strictEqual(columnCount(820), 3)
+  assert.strictEqual(columnCount(1000), 4)
+  assert.strictEqual(columnCount(1240), 5)
 }
 
 const testSortByUnitPriceToggle = () => {
@@ -249,9 +393,50 @@ const testSortByUnitPriceToggle = () => {
 
   filterProducts({ sortByUnitPrice: true })
   assert.deepStrictEqual(parent.children.map(product => product.id), ['second', 'third', 'first'])
+  assert.strictEqual(parent.clearCount, 0)
 
   filterProducts({ sortByUnitPrice: false })
   assert.deepStrictEqual(parent.children.map(product => product.id), ['first', 'second', 'third'])
+  assert.strictEqual(parent.clearCount, 0)
+}
+
+const testMovesProductsIntoSearchSlotParent = () => {
+  const first = new Product('first')
+  const second = new Product('second')
+  const firstParent = new Parent([first])
+  const secondParent = new Parent([second])
+  const { filterProducts } = runContentScript(
+    [],
+    'https://www.amazon.com/s?k=type+c+to+type+a+adapter',
+    { productParents: [firstParent, secondParent] },
+  )
+
+  filterProducts({})
+
+  assert.deepStrictEqual(firstParent.children.map(product => product.id), ['first', 'second'])
+  assert.deepStrictEqual(secondParent.children.map(product => product.id), [])
+  assert.strictEqual(first.parentElement, firstParent)
+  assert.strictEqual(second.parentElement, firstParent)
+}
+
+const testKeepsProductListAtOriginalPosition = () => {
+  const header = new Element()
+  header.id = 'header'
+  const footer = new Element()
+  footer.id = 'footer'
+  const first = new Product('first', { price: 2 })
+  const second = new Product('second', { price: 1 })
+  const parent = new Parent([header, first, second, footer])
+  const { filterProducts } = runContentScript(
+    [],
+    'https://www.amazon.com/s?k=type+c+to+type+a+adapter',
+    { productParents: [parent] },
+  )
+
+  filterProducts({ sortByUnitPrice: true })
+
+  assert.deepStrictEqual(parent.children.map(child => child.id), ['header', 'second', 'first', 'footer'])
+  assert.strictEqual(parent.clearCount, 0)
 }
 
 const testSortByUnitPriceWithoutWrapper = () => {
@@ -373,6 +558,19 @@ const testEmptySearchResults = () => {
   assert.doesNotThrow(() => filterProducts({ sortByUnitPrice: true }))
 }
 
+const testAppliesFiltersWhenResultsLoadLate = () => {
+  const { notifySearchResultsChanged, parent } = runContentScript([])
+  const product = new Product('late-product')
+  parent.appendChild(product)
+
+  notifySearchResultsChanged([{
+    matches: selector => selector.includes('[data-component-type="s-search-result"]'),
+  }])
+
+  assert.strictEqual(parent.classList.contains('better-amazon-grid-results'), true)
+  assert.strictEqual(product.hasAttribute('data-better-amazon-product-index'), true)
+}
+
 const testRemovesStalePagination = () => {
   const stalePagination = createPaginationContainer(1)
   const currentPagination = createPaginationContainer(3)
@@ -408,7 +606,11 @@ const testDefersFilteringUntilResultsMatchUrlPage = () => {
 }
 
 testMinimumReviewsCount()
+testAppliesGridLayoutOnce()
+testGridMatchesAmazonResponsiveColumnCounts()
 testSortByUnitPriceToggle()
+testMovesProductsIntoSearchSlotParent()
+testKeepsProductListAtOriginalPosition()
 testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
 testSortByModernUnitPriceMarkup()
@@ -417,6 +619,7 @@ testSortByUnitPriceUsesFullPriceTieBreaker()
 testSortByUnitPriceNumberFormats()
 testCustomFilterKeys()
 testEmptySearchResults()
+testAppliesFiltersWhenResultsLoadLate()
 testRemovesStalePagination()
 testDefersFilteringUntilResultsMatchUrlPage()
 

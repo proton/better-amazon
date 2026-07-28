@@ -6,12 +6,18 @@ const calls = []
 const tabsById = {}
 let onUpdated
 let onActivated
+let onMessage
 
 const sandbox = {
   URL,
   chrome: {
     action: {
       setIcon: payload => calls.push(payload),
+    },
+    runtime: {
+      onMessage: {
+        addListener: callback => { onMessage = callback },
+      },
     },
     tabs: {
       get: (tabId, callback) => callback(tabsById[tabId]),
@@ -31,6 +37,12 @@ vm.createContext(sandbox)
 vm.runInContext(fs.readFileSync('background.js', 'utf8'), sandbox)
 
 assert.strictEqual(iconPath(calls.at(-1)), 'images/icon-grey-48.png')
+
+onMessage(
+  { type: 'AMAZON_PAGE_READY' },
+  { tab: { id: 1, url: 'https://www.amazon.com/s?k=candle' } },
+)
+assert.strictEqual(iconPath(calls.at(-1)), 'images/icon-48.png')
 
 onUpdated(1, {}, { url: 'https://www.amazon.com/s?k=candle' })
 assert.strictEqual(iconPath(calls.at(-1)), 'images/icon-48.png')

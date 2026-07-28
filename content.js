@@ -1,12 +1,15 @@
 const elementToggle = (element, show) => {
-  element.style.display = show ? 'block' : 'none'
+  element.style.display = show ? '' : 'none'
 }
 
+const GRID_STYLE_ID = 'better-amazon-grid-style'
+const GRID_CLASS = 'better-amazon-grid-results'
 const PRODUCT_INDEX_ATTR = 'data-better-amazon-product-index'
 // Amazon search result positions continue across pages: page 3 starts at 97
 // for a 48-result page, even when the visible card data-index restarts.
 const RESULTS_PER_PAGE = 48
 const SELECTORS = {
+  searchResultsSlot: '.s-main-slot.s-search-results',
   searchResult: '.s-search-results [data-component-type="s-search-result"]',
   pagination: '.s-pagination-container',
   paginationSelected: '.s-pagination-selected',
@@ -32,6 +35,105 @@ const FEATURED_SECTION_TITLE_IDS = [
   'loom-desktop-inline-slot_featuredasins-heading',
 ]
 let nextProductIndex = 0
+
+const getSearchResultsSlot = () => document.querySelector(SELECTORS.searchResultsSlot)
+
+const getProductListParent = products => products[0]?.parentElement || getSearchResultsSlot()
+
+const RESULT_GRID_CSS = `
+.s-main-slot.s-search-results.${GRID_CLASS},
+.${GRID_CLASS} {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+}
+
+.${GRID_CLASS} > :not([data-component-type="s-search-result"]) {
+  grid-column: 1 / -1 !important;
+}
+
+.s-main-slot.s-search-results.${GRID_CLASS} > [data-component-type="s-search-result"],
+.${GRID_CLASS} > [data-component-type="s-search-result"] {
+  grid-column: auto !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  flex-basis: auto !important;
+  flex: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.${GRID_CLASS} > [data-component-type="s-search-result"] > .sg-col-inner,
+.${GRID_CLASS} [data-cy="asin-faceout-container"] {
+  height: 100% !important;
+}
+
+.${GRID_CLASS} [data-cy="asin-faceout-container"] {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.${GRID_CLASS} .puis-card-container {
+  margin: 0 !important;
+}
+
+.${GRID_CLASS} .puisg-row {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+.${GRID_CLASS} .puisg-row > .puisg-col {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: none !important;
+}
+
+.${GRID_CLASS} [data-cy="image-container"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.${GRID_CLASS} [data-cy="image-container"] .s-image-fixed-height,
+.${GRID_CLASS} [data-cy="image-container"] .s-image-square-aspect {
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #f7f7f7 !important;
+}
+
+.${GRID_CLASS} [data-cy="image-container"] img.s-image {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+`
+
+const ensureGridStyles = () => {
+  if (document.getElementById(GRID_STYLE_ID)) return
+
+  const style = document.createElement('style')
+  style.id = GRID_STYLE_ID
+  style.textContent = RESULT_GRID_CSS
+  ;(document.head || document.documentElement).appendChild(style)
+}
+
+const applyGridLayout = parent => {
+  ensureGridStyles()
+  parent?.classList.add(GRID_CLASS)
+}
 
 const getSearchProducts = () => {
   return Array.from(document.querySelectorAll(SELECTORS.searchResult))
@@ -95,11 +197,6 @@ const getPaginationContainers = () => {
 
 const getPaginationPage = container => {
   return getSelectedPaginationPage(container)
-}
-
-const findPaginationContainer = page => {
-  const containers = getPaginationContainers()
-  return containers.find(container => getPaginationPage(container) === page) || containers[containers.length - 1] || null
 }
 
 const removeStalePaginationContainers = page => {
@@ -244,6 +341,34 @@ const sortBy = (products, method, desc) => {
   })
 }
 
+const reorderProducts = (products, sortedProducts) => {
+  const parent = getProductListParent(products)
+  if (!parent) return
+
+  const firstProductInParent = products.find(product => product.parentElement === parent)
+  const anchorReference = firstProductInParent || parent.firstChild
+  if (!anchorReference) {
+    for (const product of sortedProducts) {
+      parent.appendChild(product)
+    }
+    return
+  }
+
+  const anchor = document.createComment('better-amazon-products-start')
+  parent.insertBefore(anchor, anchorReference)
+  let insertAfter = anchor
+
+  for (const product of sortedProducts) {
+    const reference = insertAfter.nextSibling
+    if (reference !== product) {
+      parent.insertBefore(product, reference)
+    }
+    insertAfter = product
+  }
+
+  anchor.remove()
+}
+
 const sortByUnitPrice = products => {
   return [...products].sort((a, b) => {
     const unitPriceDiff = getUnitPrice(a) - getUnitPrice(b)
@@ -357,7 +482,6 @@ function filterProducts(filters) {
   // Filtering below moves search result nodes around. Remove mismatched
   // pagination widgets first so a stale page-1 control is not preserved.
   removeStalePaginationContainers(urlPage)
-  const pagination = findPaginationContainer(urlPage)
 
   let products = getSearchProducts()
   assignProductIndexes(products)
@@ -365,34 +489,20 @@ function filterProducts(filters) {
     return false
   }
 
+  const productListParent = getProductListParent(products)
+  applyGridLayout(productListParent)
+
   for (const product of products) {
     const data = productData(product)
     const show = FILTER_METHODS.every(([key, method]) => !Object.hasOwn(filters, key) || method(data, filters[key]))
     elementToggle(product, show)
   }
 
-  // Sometimes elements are in different blocks
-  let parents = products.map(product => product.parentElement)
-  const mainParent = parents[0]
-  parents = [...new Set(parents)]
-  for (const parent of parents) {
-    parent.textContent = ''
-  }
+  const sortedProducts = filters.sortByUnitPrice
+    ? sortByUnitPrice(products)
+    : sortBy(products, getProductIndex)
 
-  if (filters.sortByUnitPrice) {
-    products = sortByUnitPrice(products)
-  } else {
-    products = sortBy(products, getProductIndex)
-  }
-
-  for (const product of products) {
-    mainParent.appendChild(product)
-  }
-
-  // Sometimes pagination got accidentally removed
-  if (pagination && !document.body.contains(pagination)) {
-    mainParent.appendChild(pagination)
-  }
+  reorderProducts(products, sortedProducts)
 
   const extraProductSections = []
   for (const elementId of FEATURED_SECTION_TITLE_IDS) {
@@ -441,11 +551,44 @@ const watchLocationChanges = callback => {
   setInterval(handleLocationChange, 500)
 }
 
+const watchSearchResultChanges = callback => {
+  if (typeof MutationObserver !== 'function') {
+    return
+  }
+
+  const unindexedProductSelector =
+    `[data-component-type="s-search-result"]:not([${PRODUCT_INDEX_ATTR}])`
+  const observer = new MutationObserver(mutations => {
+    const resultsChanged = mutations.some(mutation => {
+      if (mutation.addedNodes.length === 0) {
+        return false
+      }
+
+      if (mutation.target?.closest?.('[data-component-type="s-search-result"]')) {
+        return true
+      }
+
+      return Array.from(mutation.addedNodes).some(node =>
+        node.matches?.(unindexedProductSelector) ||
+        node.querySelector?.(unindexedProductSelector)
+      )
+    })
+
+    if (resultsChanged) {
+      callback()
+    }
+  })
+
+  observer.observe(document.documentElement, { childList: true, subtree: true })
+}
+
 const init = _ => {
   const state = {
     filters: {},
     reloadAttempt: 0,
   }
+
+  chrome.runtime.sendMessage({ type: 'AMAZON_PAGE_READY' })
 
   const scheduleReloadFilters = (delay = 0) => {
     setTimeout(reloadFilters, delay)
@@ -488,6 +631,7 @@ const init = _ => {
   })
 
   watchLocationChanges(reloadFiltersWithRetries)
+  watchSearchResultChanges(reloadFiltersWithRetries)
   reloadFilters()
 }
 
