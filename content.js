@@ -494,6 +494,8 @@ const init = _ => {
     reloadAttempt: 0,
   }
 
+  chrome.runtime.sendMessage({ type: 'AMAZON_PAGE_READY' })
+
   const scheduleReloadFilters = (delay = 0) => {
     setTimeout(reloadFilters, delay)
   }

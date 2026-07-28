@@ -49,6 +49,12 @@ function updateIconForTab(tabId, url) {
 
 chrome.action.setIcon({ path: getIconsPath(true) })
 
+chrome.runtime.onMessage.addListener((message, sender) => {
+  if (message?.type === 'AMAZON_PAGE_READY' && sender.tab?.id !== undefined) {
+    updateIconForTab(sender.tab.id, sender.tab.url)
+  }
+})
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   updateIconForTab(tabId, tab?.url || changeInfo?.url)
 })

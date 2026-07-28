@@ -206,6 +206,7 @@ const runContentScript = (
   const searchParents = productParents || [parent]
   const head = new Element()
   const searchResultsSlot = parent
+  const runtimeMessages = []
   const sandbox = {
     console,
     URL,
@@ -241,6 +242,7 @@ const runContentScript = (
     },
     chrome: {
       runtime: {
+        sendMessage: message => runtimeMessages.push(message),
         onMessage: {
           addListener: () => {},
         },
@@ -259,6 +261,7 @@ const runContentScript = (
     parent,
     searchResultsSlot,
     productParents: searchParents,
+    runtimeMessages,
     filterProducts: sandbox.filterProducts,
   }
 }
@@ -300,12 +303,13 @@ const testMinimumReviewsCount = () => {
 
 const testAppliesGridLayoutOnce = () => {
   const product = new Product('product')
-  const { filterProducts, head, searchResultsSlot } = runContentScript([product])
+  const { filterProducts, head, runtimeMessages, searchResultsSlot } = runContentScript([product])
 
   filterProducts({})
   filterProducts({})
 
   assert.strictEqual(searchResultsSlot.classList.contains('better-amazon-grid-results'), true)
+  assert.strictEqual(runtimeMessages[0].type, 'AMAZON_PAGE_READY')
   assert.strictEqual(head.children.filter(child => child.id === 'better-amazon-grid-style').length, 1)
   assert.strictEqual(head.children[0].textContent.includes('minmax(240px, 1fr)'), true)
   assert.strictEqual(head.children[0].textContent.includes('gap: 8px !important'), true)
