@@ -86,6 +86,7 @@ const RESULT_GRID_CSS = `
 .${GRID_CLASS} .puisg-row > .puisg-col {
   display: block !important;
   width: 100% !important;
+  min-width: 0 !important;
   max-width: none !important;
   flex: none !important;
 }
