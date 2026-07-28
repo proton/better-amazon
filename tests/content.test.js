@@ -307,7 +307,8 @@ const testAppliesGridLayoutOnce = () => {
 
   assert.strictEqual(searchResultsSlot.classList.contains('better-amazon-grid-results'), true)
   assert.strictEqual(head.children.filter(child => child.id === 'better-amazon-grid-style').length, 1)
-  assert.strictEqual(head.children[0].textContent.includes('minmax(285px, 1fr)'), true)
+  assert.strictEqual(head.children[0].textContent.includes('minmax(240px, 299px)'), true)
+  assert.strictEqual(head.children[0].textContent.includes('gap: 8px !important'), true)
   assert.strictEqual(head.children[0].textContent.includes('grid-column: auto !important'), true)
   assert.strictEqual(head.children[0].textContent.includes('flex-basis: auto !important'), true)
 }
