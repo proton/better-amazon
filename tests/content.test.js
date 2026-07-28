@@ -207,6 +207,7 @@ const runContentScript = (
   const head = new Element()
   const searchResultsSlot = parent
   const runtimeMessages = []
+  let mutationCallback
   const sandbox = {
     console,
     URL,
@@ -248,6 +249,13 @@ const runContentScript = (
         },
       },
     },
+    MutationObserver: class {
+      constructor(callback) {
+        mutationCallback = callback
+      }
+
+      observe() {}
+    },
     setInterval: () => {},
     setTimeout: callback => callback(),
   }
@@ -262,6 +270,9 @@ const runContentScript = (
     searchResultsSlot,
     productParents: searchParents,
     runtimeMessages,
+    notifySearchResultsChanged: addedNodes => mutationCallback([
+      { addedNodes, target: null },
+    ]),
     filterProducts: sandbox.filterProducts,
   }
 }
@@ -435,6 +446,19 @@ const testEmptySearchResults = () => {
   assert.doesNotThrow(() => filterProducts({ sortByUnitPrice: true }))
 }
 
+const testAppliesFiltersWhenResultsLoadLate = () => {
+  const { notifySearchResultsChanged, parent } = runContentScript([])
+  const product = new Product('late-product')
+  parent.appendChild(product)
+
+  notifySearchResultsChanged([{
+    matches: selector => selector.includes('[data-component-type="s-search-result"]'),
+  }])
+
+  assert.strictEqual(parent.classList.contains('better-amazon-grid-results'), true)
+  assert.strictEqual(product.hasAttribute('data-better-amazon-product-index'), true)
+}
+
 const testRemovesStalePagination = () => {
   const stalePagination = createPaginationContainer(1)
   const currentPagination = createPaginationContainer(3)
@@ -479,6 +503,7 @@ testSortByUnitPriceWithoutWrapper()
 testPriceFallbackParsing()
 testCustomFilterKeys()
 testEmptySearchResults()
+testAppliesFiltersWhenResultsLoadLate()
 testRemovesStalePagination()
 testDefersFilteringUntilResultsMatchUrlPage()
 

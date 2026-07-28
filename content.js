@@ -488,6 +488,37 @@ const watchLocationChanges = callback => {
   setInterval(handleLocationChange, 500)
 }
 
+const watchSearchResultChanges = callback => {
+  if (typeof MutationObserver !== 'function') {
+    return
+  }
+
+  const unindexedProductSelector =
+    `[data-component-type="s-search-result"]:not([${PRODUCT_INDEX_ATTR}])`
+  const observer = new MutationObserver(mutations => {
+    const resultsChanged = mutations.some(mutation => {
+      if (mutation.addedNodes.length === 0) {
+        return false
+      }
+
+      if (mutation.target?.closest?.('[data-component-type="s-search-result"]')) {
+        return true
+      }
+
+      return Array.from(mutation.addedNodes).some(node =>
+        node.matches?.(unindexedProductSelector) ||
+        node.querySelector?.(unindexedProductSelector)
+      )
+    })
+
+    if (resultsChanged) {
+      callback()
+    }
+  })
+
+  observer.observe(document.documentElement, { childList: true, subtree: true })
+}
+
 const init = _ => {
   const state = {
     filters: {},
@@ -537,6 +568,7 @@ const init = _ => {
   })
 
   watchLocationChanges(reloadFiltersWithRetries)
+  watchSearchResultChanges(reloadFiltersWithRetries)
   reloadFilters()
 }
 
