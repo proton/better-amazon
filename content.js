@@ -40,7 +40,7 @@ const RESULT_GRID_CSS = `
 .s-main-slot.s-search-results.${GRID_CLASS},
 .${GRID_CLASS} {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 299px)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(199px, 299px)) !important;
   gap: 8px !important;
   align-items: stretch !important;
 }
