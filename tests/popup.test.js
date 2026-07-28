@@ -3,6 +3,8 @@ const fs = require('fs')
 const vm = require('vm')
 
 const AMAZON_PERMISSION = 'https://www.amazon.com/*'
+const AMAZON_CA_PERMISSION = 'https://www.amazon.ca/*'
+const AMAZON_PERMISSIONS = [AMAZON_PERMISSION, AMAZON_CA_PERMISSION]
 const FILTER_FIELDS = [
   'minimumReviewsCount',
   'freeDelivery',
@@ -38,6 +40,7 @@ const runPopup = ({ hasPermission, requestGranted = true }) => {
   FILTER_FIELDS.forEach(id => { elements[id] = createElement() })
 
   const messages = []
+  const checkedPermissions = []
   const requestedPermissions = []
   let reloadedTabId = null
   let popupClosed = false
@@ -53,14 +56,17 @@ const runPopup = ({ hasPermission, requestGranted = true }) => {
     },
     chrome: {
       permissions: {
-        contains: async () => hasPermission,
+        contains: async permissions => {
+          checkedPermissions.push(permissions)
+          return hasPermission
+        },
         request: async permissions => {
           requestedPermissions.push(permissions)
           return requestGranted
         },
       },
       runtime: {
-        getManifest: () => ({ host_permissions: [AMAZON_PERMISSION] }),
+        getManifest: () => ({ host_permissions: AMAZON_PERMISSIONS }),
       },
       tabs: {
         query: (_query, callback) => {
@@ -84,6 +90,7 @@ const runPopup = ({ hasPermission, requestGranted = true }) => {
   return {
     elements,
     messages,
+    checkedPermissions,
     requestedPermissions,
     get reloadedTabId() { return reloadedTabId },
     get popupClosed() { return popupClosed },
@@ -96,7 +103,7 @@ const testPermissionRequest = async () => {
 
   assert.strictEqual(
     result.elements['status-message'].textContent,
-    'Allow access to this Amazon site to apply filters automatically.',
+    'Allow access to Amazon sites to apply filters automatically.',
   )
   assert.strictEqual(result.elements['grant-permission'].style.display, '')
   assert.strictEqual(result.messages.length, 0)
@@ -105,7 +112,11 @@ const testPermissionRequest = async () => {
 
   assert.deepStrictEqual(
     plain(result.requestedPermissions),
-    [{ origins: [AMAZON_PERMISSION] }],
+    [{ origins: AMAZON_PERMISSIONS }],
+  )
+  assert.deepStrictEqual(
+    plain(result.checkedPermissions),
+    [{ origins: AMAZON_PERMISSIONS }],
   )
   assert.strictEqual(result.reloadedTabId, 7)
   assert.strictEqual(result.popupClosed, true)

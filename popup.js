@@ -47,6 +47,10 @@ const getCurrentTab = () => new Promise(resolve => {
   })
 })
 
+const amazonHostPermissions = () => {
+  return chrome.runtime.getManifest().host_permissions || []
+}
+
 const hostPermissionForUrl = (url) => {
   if (!url) {
     return null
@@ -54,9 +58,8 @@ const hostPermissionForUrl = (url) => {
 
   try {
     const origin = new URL(url).origin
-    const permissions = chrome.runtime.getManifest().host_permissions || []
 
-    return permissions.find(pattern => {
+    return amazonHostPermissions().find(pattern => {
       return new URL(pattern.replace(/\*$/, '')).origin === origin
     }) || null
   } catch (err) {
@@ -104,18 +107,18 @@ const filterProducts = (state) => {
   sendMessageToTab(state.tabId, 'APPLY_FILTERS', getFilters(state.filterTags))
 }
 
-const showPermissionRequest = (state, permission) => {
+const showPermissionRequest = (state, permissions) => {
   const statusMessage = document.getElementById('status-message')
   const grantButton = document.getElementById('grant-permission')
 
-  statusMessage.textContent = 'Allow access to this Amazon site to apply filters automatically.'
+  statusMessage.textContent = 'Allow access to Amazon sites to apply filters automatically.'
   grantButton.style.display = ''
 
   grantButton.addEventListener('click', async () => {
     grantButton.disabled = true
 
     try {
-      const granted = await chrome.permissions.request({ origins: [permission] })
+      const granted = await chrome.permissions.request({ origins: permissions })
       if (!granted) {
         statusMessage.textContent = 'Amazon access was not granted.'
         grantButton.disabled = false
@@ -148,15 +151,15 @@ const init = async _ => {
   }
 
   const tab = await getCurrentTab()
-  const permission = hostPermissionForUrl(tab?.url)
-  if (!permission) {
+  if (!hostPermissionForUrl(tab?.url)) {
     return
   }
 
   state.tabId = tab.id
-  const hasPermission = await chrome.permissions.contains({ origins: [permission] })
+  const permissions = amazonHostPermissions()
+  const hasPermission = await chrome.permissions.contains({ origins: permissions })
   if (!hasPermission) {
-    showPermissionRequest(state, permission)
+    showPermissionRequest(state, permissions)
     return
   }
 
