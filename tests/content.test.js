@@ -307,7 +307,7 @@ const testAppliesGridLayoutOnce = () => {
 
   assert.strictEqual(searchResultsSlot.classList.contains('better-amazon-grid-results'), true)
   assert.strictEqual(head.children.filter(child => child.id === 'better-amazon-grid-style').length, 1)
-  assert.strictEqual(head.children[0].textContent.includes('minmax(199px, 1fr)'), true)
+  assert.strictEqual(head.children[0].textContent.includes('minmax(300px, 1fr)'), true)
   assert.strictEqual(head.children[0].textContent.includes('gap: 8px !important'), true)
   assert.strictEqual(head.children[0].textContent.includes('grid-column: auto !important'), true)
   assert.strictEqual(head.children[0].textContent.includes('flex-basis: auto !important'), true)
@@ -315,6 +315,22 @@ const testAppliesGridLayoutOnce = () => {
     split('.better-amazon-grid-results > [data-component-type="s-search-result"] {')[1].
     split('}')[0]
   assert.strictEqual(productRule.includes('display: block !important'), false)
+}
+
+const testGridMatchesAmazonResponsiveColumnCounts = () => {
+  const product = new Product('product')
+  const { filterProducts, head } = runContentScript([product])
+
+  filterProducts({})
+
+  const css = head.children[0].textContent
+  const minimumWidth = +css.match(/minmax\((\d+)px, 1fr\)/)[1]
+  const gap = +css.match(/gap: (\d+)px !important/)[1]
+  const columnCount = width => Math.floor((width + gap) / (minimumWidth + gap))
+
+  assert.strictEqual(columnCount(1090), 3)
+  assert.strictEqual(columnCount(1330), 4)
+  assert.strictEqual(columnCount(1532), 5)
 }
 
 const testSortByUnitPriceToggle = () => {
@@ -451,6 +467,7 @@ const testDefersFilteringUntilResultsMatchUrlPage = () => {
 
 testMinimumReviewsCount()
 testAppliesGridLayoutOnce()
+testGridMatchesAmazonResponsiveColumnCounts()
 testSortByUnitPriceToggle()
 testMovesProductsIntoSearchSlotParent()
 testKeepsProductListAtOriginalPosition()
