@@ -51,7 +51,6 @@ const RESULT_GRID_CSS = `
 
 .s-main-slot.s-search-results.${GRID_CLASS} > [data-component-type="s-search-result"],
 .${GRID_CLASS} > [data-component-type="s-search-result"] {
-  display: block !important;
   grid-column: auto !important;
   width: auto !important;
   max-width: none !important;

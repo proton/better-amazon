@@ -311,6 +311,10 @@ const testAppliesGridLayoutOnce = () => {
   assert.strictEqual(head.children[0].textContent.includes('gap: 8px !important'), true)
   assert.strictEqual(head.children[0].textContent.includes('grid-column: auto !important'), true)
   assert.strictEqual(head.children[0].textContent.includes('flex-basis: auto !important'), true)
+  const productRule = head.children[0].textContent.
+    split('.better-amazon-grid-results > [data-component-type="s-search-result"] {')[1].
+    split('}')[0]
+  assert.strictEqual(productRule.includes('display: block !important'), false)
 }
 
 const testSortByUnitPriceToggle = () => {
